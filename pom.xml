@@ -1,0 +1,331 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>br.unb.cic.reach</groupId>
+    <artifactId>reach-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <organization>
+        <name>Universidade de Brasília</name>
+        <url>http://www.cic.unb.br/</url>
+    </organization>
+    <inceptionYear>2025</inceptionYear>
+
+    <name>Reach :: Parent</name>
+
+    <scm>
+        <connection>scm:git:https://github.com/PAMunb/reach-android.git</connection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <properties>
+        <java.version>21</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+
+        <soot.version>4.4.1</soot.version>
+        <commons-lang3.version>3.13.0</commons-lang3.version>
+        <commons-io.version>2.13.0</commons-io.version>
+        <guava.version>19.0</guava.version>
+        <android.version>4.1.1.4</android.version>
+        <jaxb.version>2.3.3</jaxb.version>
+        <javaparser.version>3.25.0</javaparser.version>
+        <jcommander.version>1.82</jcommander.version>
+        <apktool.version>2.10.0</apktool.version>
+        <flowdroid.version>2.10.0</flowdroid.version>
+        <gson.version>2.10.1</gson.version>
+        <jgrapht.version>1.5.2</jgrapht.version>
+        <slf4j.version>1.7.26</slf4j.version>
+        <logback.version>1.2.6</logback.version>
+
+        <junit.version>4.13.2</junit.version>
+
+        <maven-clean-plugin.version>3.3.1</maven-clean-plugin.version>
+        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+        <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
+        <maven-assembly-plugin.version>3.6.0</maven-assembly-plugin.version>
+        <maven-release-plugin.version>3.0.1</maven-release-plugin.version>
+        <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.1.2</maven-failsafe-plugin.version>
+
+        <jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
+        <spotbugs-maven-plugin.version>4.7.0.0</spotbugs-maven-plugin.version>
+        <fb-contrib.version>7.4.3.sb</fb-contrib.version>
+        <findsecbugs-plugin.version>1.12.0</findsecbugs-plugin.version>
+        <dependency-check-maven.version>7.1.1</dependency-check-maven.version>
+        <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
+        <com.puppycrawl.tools.checkstyle.version>10.3</com.puppycrawl.tools.checkstyle.version>
+    </properties>
+
+    <modules>
+        <module>apk</module>
+        <module>android</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>br.unb.cic.reach</groupId>
+                <artifactId>apk</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>de.fraunhofer.sit.sse.flowdroid</groupId>
+                <artifactId>soot-infoflow</artifactId>
+                <version>${flowdroid.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.fraunhofer.sit.sse.flowdroid</groupId>
+                <artifactId>soot-infoflow-summaries</artifactId>
+                <version>${flowdroid.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.fraunhofer.sit.sse.flowdroid</groupId>
+                <artifactId>soot-infoflow-android</artifactId>
+                <version>${flowdroid.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apktool</groupId>
+                <artifactId>apktool-lib</artifactId>
+                <version>${apktool.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apktool</groupId>
+                <artifactId>apktool-cli</artifactId>
+                <version>${apktool.version}</version>
+                <optional>true</optional>
+            </dependency>
+
+            <!--            <dependency>-->
+            <!--                <groupId>org.soot-oss</groupId>-->
+            <!--                <artifactId>soot</artifactId>-->
+            <!--                <version>${soot.version}</version>-->
+            <!--            </dependency>-->
+
+            <dependency>
+                <groupId>org.jgrapht</groupId>
+                <artifactId>jgrapht-core</artifactId>
+                <version>${jgrapht.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>${gson.version}</version>
+            </dependency>
+
+            <!--            <dependency>-->
+            <!--                <groupId>com.google.guava</groupId>-->
+            <!--                <artifactId>guava</artifactId>-->
+            <!--                <version>${guava.version}</version>-->
+            <!--            </dependency>-->
+
+            <!--            <dependency>-->
+            <!--                <groupId>org.apache.commons</groupId>-->
+            <!--                <artifactId>commons-lang3</artifactId>-->
+            <!--                <version>${commons-lang3.version}</version>-->
+            <!--            </dependency>-->
+            <!--            <dependency>-->
+            <!--                <groupId>commons-io</groupId>-->
+            <!--                <artifactId>commons-io</artifactId>-->
+            <!--                <version>${commons-io.version}</version>-->
+            <!--            </dependency>-->
+
+            <!--            <dependency>-->
+            <!--                <groupId>com.google.android</groupId>-->
+            <!--                <artifactId>android</artifactId>-->
+            <!--                <version>${android.version}</version>-->
+            <!--                <scope>provided</scope>-->
+            <!--            </dependency>-->
+
+            <!--            <dependency>-->
+            <!--                <groupId>jakarta.xml.bind</groupId>-->
+            <!--                <artifactId>jakarta.xml.bind-api</artifactId>-->
+            <!--                <version>${jaxb.version}</version>-->
+            <!--            </dependency>-->
+            <!--            <dependency>-->
+            <!--                <groupId>com.sun.xml.bind</groupId>-->
+            <!--                <artifactId>jaxb-impl</artifactId>-->
+            <!--                <version>${jaxb.version}</version>-->
+            <!--                <scope>runtime</scope>-->
+            <!--            </dependency>-->
+
+            <!--            <dependency>-->
+            <!--                <groupId>com.github.javaparser</groupId>-->
+            <!--                <artifactId>javaparser-core</artifactId>-->
+            <!--                <version>${javaparser.version}</version>-->
+            <!--            </dependency>-->
+            <!--            <dependency>-->
+            <!--                <groupId>com.github.javaparser</groupId>-->
+            <!--                <artifactId>javaparser-symbol-solver-core</artifactId>-->
+            <!--                <version>${javaparser.version}</version>-->
+            <!--            </dependency>-->
+
+            <dependency>
+                <groupId>com.beust</groupId>
+                <artifactId>jcommander</artifactId>
+                <version>${jcommander.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.maven.surefire</groupId>
+                <artifactId>surefire-junit4</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>br.unb.cic</groupId>
+                    <artifactId>mop-maven-plugin</artifactId>
+                    <version>${project.version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>${maven-clean-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${maven-resources-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin.version}</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <encoding>${project.build.sourceEncoding}</encoding>
+                        <debug>true</debug>
+                        <parameters>false</parameters>
+                        <verbose>false</verbose>
+                        <showWarnings>false</showWarnings>
+                        <showDeprecation>false</showDeprecation>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven-jar-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>${maven-source-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>${maven-assembly-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>${maven-release-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                    <configuration>
+                        <runOrder>alphabetical</runOrder>
+                        <testFailureIgnore>false</testFailureIgnore>
+                        <trimStackTrace>true</trimStackTrace>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${maven-failsafe-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>${spotbugs-maven-plugin.version}</version>
+                    <configuration>
+                        <effort>Max</effort>
+                        <threshold>Low</threshold>
+                        <xmlOutput>true</xmlOutput>
+                        <failOnError>false</failOnError>
+                        <debug>false</debug>
+                        <includeTests>false</includeTests>
+                        <spotbugsXmlOutput>true</spotbugsXmlOutput>
+                        <onlyAnalyze>br.unb.cic.*</onlyAnalyze>
+                        <plugins>
+                            <plugin>
+                                <groupId>com.mebigfatguy.fb-contrib</groupId>
+                                <artifactId>fb-contrib</artifactId>
+                                <version>${fb-contrib.version}</version>
+                            </plugin>
+                            <plugin>
+                                <groupId>com.h3xstream.findsecbugs</groupId>
+                                <artifactId>findsecbugs-plugin</artifactId>
+                                <version>${findsecbugs-plugin.version}</version>
+                            </plugin>
+                        </plugins>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>${dependency-check-maven.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>javacc-maven-plugin</artifactId>
+                    <version>2.6</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+</project>
