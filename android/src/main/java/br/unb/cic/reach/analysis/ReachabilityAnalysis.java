@@ -178,6 +178,36 @@ public class ReachabilityAnalysis {
         return reachableMethods;
     }
 
+    private Map<SootMethod, Path> getReachableMethods(Set<SootMethod> entryPoints, Set<SootMethod> targetMethods) {
+        log.debug("Finding reachable methods ...");
+        Map<SootMethod, Path> reachableMethods = new HashMap<>();
+
+        // Check each target method
+        for (SootClass clazz : getApplicationClasses()) {
+            for (SootMethod method : clazz.getMethods()) {
+                // Skip if already marked as reachable
+                if (reachableMethods.containsKey(method)) {
+                    continue;
+                }
+
+                // Check reachability from each entry point
+                for (SootMethod entrypoint : entryPoints) {
+                    // Skip self-references
+                    if (!entrypoint.equals(method)) {
+                        Optional<Path> pathOpt = analysisStrategy.findPath(entrypoint, method);
+                        if (pathOpt.isPresent()) {
+                            // Store the first found path to this method
+                            reachableMethods.put(method, pathOpt.get());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return reachableMethods;
+    }
+
     /**
      * Retrieves Activity information for a given SootClass.
      * 

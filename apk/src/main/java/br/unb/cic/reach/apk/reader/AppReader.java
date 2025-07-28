@@ -92,7 +92,7 @@ public class AppReader {
         if (activityName != null && activityName.startsWith(".")) {
             activityName = manifestPackage + activityName;
         }
-        log.debug("Reading activity: " + activityName);
+        log.debug("Reading activity: {}", activityName);
         boolean isMain = false;
         for (AXmlNode child : activityNode.getChildren()) {
             if (INTENT_FILTER.equals(child.getTag())) {

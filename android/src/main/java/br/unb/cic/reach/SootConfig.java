@@ -59,9 +59,9 @@ public class SootConfig {
 
 	private static void initializeSoot(String apk, String androidPlatformsDir, String rtJarPath) {
 		log.debug("Initializing Soot ...");
-		log.trace("APK: "+apk);
-		log.trace("Android platforms dir: "+androidPlatformsDir);
-		log.trace("RT jar: "+rtJarPath);
+		log.debug("APK: "+apk);
+		log.debug("Android platforms dir: "+androidPlatformsDir);
+		log.debug("RT jar: "+rtJarPath);
 		
 		G.reset();
 		Options.v().set_full_resolver(true);

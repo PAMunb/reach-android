@@ -21,6 +21,11 @@ public class AppInfo {
 	private Set<ActivityInfo> activities = new HashSet<>();
 	private ActivityInfo mainActivity;
 
+	// TODO implement
+	private Set<String> services = new HashSet<>();
+	private Set<String> broadcastReceivers = new HashSet<>();
+	private Set<String> contentProviders = new HashSet<>();
+
 	public AppInfo(String path) {
 		this.path = path;
 		this.fileName = new File(path).getName();

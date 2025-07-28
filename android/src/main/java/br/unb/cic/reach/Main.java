@@ -4,15 +4,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +37,7 @@ import soot.jimple.infoflow.android.SetupApplication;
 public class Main {
     private static final Logger log = LoggerFactory.getLogger(Main.class);
 
-    public void execute(String apkPath, String methodsFile, String androidPlatformsDir, String rtJarPath, String resultsFile, Writer writer, boolean checkOnlyInAppPackage, int timeout) throws Exception {
+    public void execute(String apkPath, String targetMethodsFile, String androidPlatformsDir, String rtJarPath, String resultsFile, Writer writer, boolean checkOnlyInAppPackage, int timeout) throws Exception {
         log.info("Executing ...");
 
         // get application info
@@ -53,7 +48,7 @@ public class Main {
         SetupApplication infoflow = SootConfig.initialize(apkPath, androidPlatformsDir, rtJarPath, timeout);
 
         // target methods
-        Set<SootMethod> targetMethods = getTargetMethods(methodsFile, appInfo, checkOnlyInAppPackage);
+        Set<SootMethod> targetMethods = getTargetMethods(targetMethodsFile);
 
         // the list of all activities (with inner classes)
         List<SootClass> activities = getActivitiesWithInnerClasses(appInfo);
@@ -98,6 +93,9 @@ public class Main {
 
     private Set<SootMethod> getEntrypoints(List<SootClass> activities, AppInfo appInfo) {
         Set<SootMethod> entryPoints = new HashSet<>();
+
+        List<SootClass> a = getActivities(appInfo);
+
         for (SootClass clazz : activities) {
             for (SootMethod method : clazz.getMethods()) {
                 if (isValidEntrypoint(method, appInfo)) {
@@ -110,11 +108,27 @@ public class Main {
         return entryPoints;
     }
 
+    private List<SootClass> getActivities(AppInfo appInfo){
+        List<SootClass> activities = new ArrayList<>();// all activities'window node
+        for (SootClass clazz : Scene.v().getApplicationClasses()) {
+            for (ActivityInfo activityInfo : appInfo.getActivities()) {
+                if (clazz.getName().startsWith(activityInfo.getName())) { // include inner classes
+//				if (actInfo.getName().equals(clazz.getName())) {
+                    activities.add(clazz);
+                }
+            }
+        }
+        log.info("Activities: " + activities.size());
+        activities.forEach(m -> log.debug(" - " + m.getName()));
+        return activities;
+    }
+
     private boolean isValidEntrypoint(SootMethod sootMethod, AppInfo appInfo) {
         return sootMethod.isConcrete() && !sootMethod.isConstructor() && !sootMethod.isPrivate();
     }
 
-    private Set<SootMethod> getTargetMethods(String methodsFile, AppInfo appInfo, boolean checkOnlyInAppPackage) {
+    private Set<SootMethod> getTargetMethods(String methodsFile) {
+        log.info("Target methods file: " + methodsFile);
         Set<SootMethod> sootMethods = new HashSet<>();
         List<String> methodsSignatures = readMethodsFile(methodsFile);
         for (String methodSignature : methodsSignatures) {
