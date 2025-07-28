@@ -13,6 +13,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>br.unb.cic.reach</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
+        <dependency>
             <groupId>de.fraunhofer.sit.sse.flowdroid</groupId>
             <artifactId>soot-infoflow</artifactId>
         </dependency>
@@ -28,6 +32,10 @@
             <groupId>org.apktool</groupId>
             <artifactId>apktool-cli</artifactId>
         </dependency>
+        <dependency>
+            <groupId>br.unb.cic.reach</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
     </dependencies>
 
     <repositories>
@@ -35,7 +43,6 @@
             <id>central</id>
             <url>https://repo1.maven.org/maven2/</url>
         </repository>
-        <!-- google repo to download smali deps-->
         <repository>
             <id>google</id>
             <url>https://maven.google.com/</url>
