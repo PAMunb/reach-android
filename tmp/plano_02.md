@@ -1678,3 +1678,59 @@ public class DistributedAnalysis {
 ---
 
 *Este plano de implementação define uma arquitetura extensível e robusta para análise de reachability, com foco inicial em Android APKs e preparação para expansão futura para outros formatos de aplicação.*
+
+
+## 12. Documentação Abrangente
+
+### 12.1 Template de Documentação
+
+#### Para Classes:
+
+```java
+/**
+ * [Descrição concisa da classe em uma linha]
+ *
+ * [Parágrafo explicativo sobre o propósito e funcionamento da classe]
+ *
+ * ### Architectural Decisions:
+ * - [Decisão arquitetural 1 com justificativa]
+ * - [Decisão arquitetural 2 com justificativa]
+ * - [Decisão arquitetural 3 com justificativa]
+ *
+ * ### Role in the System:
+ * - [Papel específico no sistema]
+ * - [Responsabilidades principais]
+ * - [Integrações com outros componentes]
+ *
+ * ### Key Features:
+ * - [Funcionalidade chave 1]
+ * - [Funcionalidade chave 2]
+ * - [Funcionalidade chave 3]
+ */
+public class ClassName {
+    // implementação
+}
+```
+
+#### Para Métodos:
+
+```java
+/**
+ * [Descrição concisa do que o método faz]
+ *
+ * [Parágrafo explicativo sobre comportamento, algoritmo ou lógica especial]
+ *
+ * ### Implementation Notes:
+ * - [Nota sobre implementação específica]
+ * - [Consideração de performance ou thread-safety]
+ * - [Tratamento de casos especiais]
+ *
+ * @param parameter1 Descrição do parâmetro 1
+ * @param parameter2 Descrição do parâmetro 2
+ * @return Descrição do que é retornado
+ * @throws ExceptionType Quando e por que a exceção é lançada
+ */
+public ReturnType methodName(ParamType parameter1, ParamType parameter2) {
+    // implementação
+}
+```

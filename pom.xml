@@ -65,18 +65,18 @@
     </properties>
 
     <modules>
-        <module>common</module>
-        <module>apk</module>
-        <module>android</module>
-        <module>jar</module>
-        <module>main</module>
+        <module>reach-core</module>
+        <module>reach-apk</module>
+        <module>reach-android</module>
+        <module>reach-jar</module>
+        <module>reach-main</module>
     </modules>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>br.unb.cic.reach</groupId>
-                <artifactId>common</artifactId>
+                <artifactId>core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
