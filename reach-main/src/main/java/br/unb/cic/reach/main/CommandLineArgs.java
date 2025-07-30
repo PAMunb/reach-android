@@ -18,18 +18,18 @@ import br.unb.cic.reach.common.writer.WriterType;
 
 /**
  * Command line arguments with integrated ConfigMatrix support.
- * 
+ * <p>
  * This class provides a simplified interface for command line parameter processing
  * while leveraging ConfigMatrix for unified configuration management. It maintains
  * backward compatibility while enabling the full power of the configuration matrix
  * system including analysis scope filtering and optimized algorithm selection.
- * 
+ * <p>
  * ### Configuration Integration:
  * - Direct ConfigMatrix construction from CLI parameters
  * - Intelligent defaults based on application characteristics
  * - Comprehensive validation with clear error messages
  * - Support for all analysis scope and algorithm combinations
- * 
+ * <p>
  * ### Simplified Parameter Set:
  * The CLI focuses on essential user-facing parameters while ConfigMatrix
  * handles the complex interactions and algorithmic optimizations internally.
@@ -59,7 +59,7 @@ public class CommandLineArgs {
 
     /**
      * Analysis scope parameter for output filtering.
-     * 
+     * <p>
      * This parameter directly maps to AnalysisScope and controls
      * which methods appear in the final output based on their reachability status.
      * The ConfigMatrix handles the complex interactions with other parameters
@@ -111,40 +111,40 @@ public class CommandLineArgs {
 
     /**
      * Build ConfigMatrix from command line parameters.
-     * 
+     * <p>
      * This method constructs a complete ConfigMatrix instance using the CLI parameters
      * as input, applying intelligent defaults and validation. The ConfigMatrix handles
      * the complex parameter interactions and algorithm selection automatically.
-     * 
+     * <p>
      * ### Configuration Process:
      * 1. Parse basic parameters (scope, entry points, etc.)
      * 2. Apply intelligent defaults based on input characteristics
      * 3. Validate parameter combinations and warn about conflicts
      * 4. Select optimal algorithms based on configuration and estimated complexity
-     * 
+     *
      * @return Fully configured ConfigMatrix ready for analysis execution
      * @throws ConfigurationException if parameter validation fails
      */
     public ConfigMatrix buildConfigMatrix() throws ConfigurationException {
         return new ConfigMatrix.Builder()
-            .withAnalysisScope(AnalysisScope.fromString(analysisScope))
-            .withAppPackageOnly(appPackageOnly)
-            .withEntryPointTypes(parseEntryPointTypes(entryPointTypes))
-            .withExtractOnly(extractOnly)
-            .withWriterType(WriterType.fromString(writerType))
-            .withTimeout(timeout)
-            .withInputPath(inputPath)
-            .withTargetsFile(targetsFile)
-            .withEntryPointsFile(entryPointsFile)
-            .withOutputFile(outputFile)
-            .withAndroidPlatformsDir(androidDir)
-            .withRtJarPath(rtJar)
-            .build();
+                .withAnalysisScope(AnalysisScope.fromString(analysisScope))
+                .withAppPackageOnly(appPackageOnly)
+                .withEntryPointTypes(parseEntryPointTypes(entryPointTypes))
+                .withExtractOnly(extractOnly)
+                .withWriterType(WriterType.fromString(writerType))
+                .withTimeout(timeout)
+                .withInputPath(inputPath)
+                .withTargetsFile(targetsFile)
+                .withEntryPointsFile(entryPointsFile)
+                .withOutputFile(outputFile)
+                .withAndroidPlatformsDir(androidDir)
+                .withRtJarPath(rtJar)
+                .build();
     }
 
     /**
      * Validate all command line parameters with comprehensive error reporting.
-     * 
+     * <p>
      * This method performs validation of file paths, parameter combinations,
      * and configuration consistency. It provides detailed error messages to
      * help users correct configuration issues.
@@ -199,7 +199,7 @@ public class CommandLineArgs {
 
     /**
      * Parse entry point types into ComponentType set.
-     * 
+     * <p>
      * This method handles the complexity of parsing various entry point specifications,
      * including the "all" shorthand and comma-separated component lists.
      */
@@ -244,7 +244,7 @@ public class CommandLineArgs {
                     "candidates" + File.separatorChar + "java" + File.separatorChar +
                     "8.0.302-open" + File.separatorChar + "jre" + File.separatorChar +
                     "lib" + File.separatorChar + "rt.jar";
-            
+
             if (new File(sdkmanJava8).exists()) {
                 rtJar = sdkmanJava8;
             } else {
@@ -300,32 +300,102 @@ public class CommandLineArgs {
     }
 
     // Getters for legacy compatibility
-    public String getInputPath() { return inputPath; }
-    public String getTargetsFile() { return targetsFile; }
-    public String getEntryPointsFile() { return entryPointsFile; }
-    public String getOutputFile() { return outputFile; }
-    public boolean isExtractOnly() { return extractOnly; }
-    public String getAnalysisScope() { return analysisScope; }
-    public String getAndroidDir() { return androidDir; }
-    public String getRtJar() { return rtJar; }
-    public int getTimeout() { return timeout; }
-    public boolean isAppPackageOnly() { return appPackageOnly; }
-    public boolean isDebug() { return debug; }
-    public boolean isHelp() { return help; }
+    public String getInputPath() {
+        return inputPath;
+    }
+
+    public String getTargetsFile() {
+        return targetsFile;
+    }
+
+    public String getEntryPointsFile() {
+        return entryPointsFile;
+    }
+
+    public String getOutputFile() {
+        return outputFile;
+    }
+
+    public boolean isExtractOnly() {
+        return extractOnly;
+    }
+
+    public String getAnalysisScope() {
+        return analysisScope;
+    }
+
+    public String getAndroidDir() {
+        return androidDir;
+    }
+
+    public String getRtJar() {
+        return rtJar;
+    }
+
+    public int getTimeout() {
+        return timeout;
+    }
+
+    public boolean isAppPackageOnly() {
+        return appPackageOnly;
+    }
+
+    public boolean isDebug() {
+        return debug;
+    }
+
+    public boolean isHelp() {
+        return help;
+    }
 
     // Setters for testing and programmatic usage
-    public void setInputPath(String inputPath) { this.inputPath = inputPath; }
-    public void setTargetsFile(String targetsFile) { this.targetsFile = targetsFile; }
-    public void setEntryPointsFile(String entryPointsFile) { this.entryPointsFile = entryPointsFile; }
-    public void setOutputFile(String outputFile) { this.outputFile = outputFile; }
-    public void setExtractOnly(boolean extractOnly) { this.extractOnly = extractOnly; }
-    public void setAnalysisScope(String analysisScope) { this.analysisScope = analysisScope; }
-    public void setAndroidDir(String androidDir) { this.androidDir = androidDir; }
-    public void setRtJar(String rtJar) { this.rtJar = rtJar; }
-    public void setTimeout(int timeout) { this.timeout = timeout; }
-    public void setAppPackageOnly(boolean appPackageOnly) { this.appPackageOnly = appPackageOnly; }
-    public void setDebug(boolean debug) { this.debug = debug; }
-    public void setHelp(boolean help) { this.help = help; }
+    public void setInputPath(String inputPath) {
+        this.inputPath = inputPath;
+    }
+
+    public void setTargetsFile(String targetsFile) {
+        this.targetsFile = targetsFile;
+    }
+
+    public void setEntryPointsFile(String entryPointsFile) {
+        this.entryPointsFile = entryPointsFile;
+    }
+
+    public void setOutputFile(String outputFile) {
+        this.outputFile = outputFile;
+    }
+
+    public void setExtractOnly(boolean extractOnly) {
+        this.extractOnly = extractOnly;
+    }
+
+    public void setAnalysisScope(String analysisScope) {
+        this.analysisScope = analysisScope;
+    }
+
+    public void setAndroidDir(String androidDir) {
+        this.androidDir = androidDir;
+    }
+
+    public void setRtJar(String rtJar) {
+        this.rtJar = rtJar;
+    }
+
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
+    public void setAppPackageOnly(boolean appPackageOnly) {
+        this.appPackageOnly = appPackageOnly;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
+    public void setHelp(boolean help) {
+        this.help = help;
+    }
 
     /**
      * Get entry point types as enum set for compatibility.

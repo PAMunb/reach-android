@@ -1,6 +1,7 @@
 package br.unb.cic.reach.main.factory;
 
-import br.unb.cic.reach.mop.AndroidExtractor;
+
+import br.unb.cic.reach.android.AndroidExtractor;
 import br.unb.cic.reach.common.extractor.ApplicationExtractor;
 import br.unb.cic.reach.common.extractor.UnsupportedFormatException;
 import br.unb.cic.reach.common.model.ApplicationType;

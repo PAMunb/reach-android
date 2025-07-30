@@ -1,7 +1,7 @@
 package br.unb.cic.reach.main;
 
+import br.unb.cic.reach.android.SootConfig;
 import br.unb.cic.reach.mop.Mop2Soot;
-import br.unb.cic.reach.mop.SootConfig;
 import soot.Scene;
 import soot.jimple.infoflow.android.SetupApplication;
 import soot.jimple.toolkits.callgraph.CallGraph;

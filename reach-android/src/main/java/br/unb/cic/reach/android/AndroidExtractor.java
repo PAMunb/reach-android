@@ -1,4 +1,4 @@
-package br.unb.cic.reach.mop;
+package br.unb.cic.reach.android;
 
 import java.util.HashSet;
 import java.util.List;
@@ -492,7 +492,15 @@ public class AndroidExtractor implements ApplicationExtractor {
             
             // Phase 2: Simple indirect call detection (only if no direct calls found)
             if (!reachMethod.isReachesTarget()) {
+                if (sootMethod.getName().equals("unreachableHash")) {
+                    System.out.println("DEBUG_UNREACHABLE: Starting indirect analysis for unreachableHash");
+                }
                 analyzeIndirectCalls(reachMethod, sootMethod, targetMethods, body);
+                if (sootMethod.getName().equals("unreachableHash")) {
+                    System.out.println("DEBUG_UNREACHABLE: After indirect analysis - reachesTarget=" + reachMethod.isReachesTarget() + ", targets=" + reachMethod.getReachableTargets().size());
+                }
+            } else if (sootMethod.getName().equals("unreachableHash")) {
+                System.out.println("DEBUG_UNREACHABLE: Skipping indirect analysis - already reachesTarget=true");
             }
             
         } catch (Exception e) {

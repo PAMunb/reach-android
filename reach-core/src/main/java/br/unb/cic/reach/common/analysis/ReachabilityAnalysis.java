@@ -21,9 +21,13 @@ import br.unb.cic.reach.common.model.EntryPoint;
 import br.unb.cic.reach.common.model.Path;
 import br.unb.cic.reach.common.model.ReachClass;
 import br.unb.cic.reach.common.model.ReachMethod;
+import soot.Body;
 import soot.Scene;
 import soot.SootClass;
 import soot.SootMethod;
+import soot.Unit;
+import soot.jimple.InvokeExpr;
+import soot.jimple.Stmt;
 import soot.jimple.toolkits.callgraph.CallGraph;
 import soot.jimple.toolkits.callgraph.Edge;
 
@@ -105,10 +109,6 @@ public class ReachabilityAnalysis {
                 entryPoints.size(), targetMethods.size(), 
                 configMatrix.getReachabilityAlgorithm().getValue());
 
-        System.out.println("DEBUG_REACH: ReachabilityAnalysis.analyze() - Entry points: " + entryPoints.size()); // DEBUG_REACH
-        System.out.println("DEBUG_REACH: ReachabilityAnalysis.analyze() - Target methods: " + targetMethods.size()); // DEBUG_REACH
-        System.out.println("DEBUG_REACH: ReachabilityAnalysis.analyze() - Call graph edges: " + callGraph.size()); // DEBUG_REACH
-        System.out.println("DEBUG_REACH: ReachabilityAnalysis.analyze() - Base AppInfo classes: " + baseAppInfo.getClasses().size()); // DEBUG_REACH
 
         long startTime = System.currentTimeMillis();
 
@@ -781,7 +781,7 @@ public class ReachabilityAnalysis {
     }
 
     /**
-     * Update AppInfo with reachability results using the original efficient method.
+     * Update AppInfo with reachability results.
      */
     private void updateAppInfoWithResults(Map<SootMethod, ReachabilityInfo> reachabilityMap,
                                           Set<EntryPoint> entryPoints,
@@ -795,8 +795,17 @@ public class ReachabilityAnalysis {
                 SootMethod sootMethod = findSootMethod(reachMethod.getMethodSignature());
                 if (sootMethod != null) {
                     ReachabilityInfo info = reachabilityMap.get(sootMethod);
+                    boolean isEntryPoint = entryPointMap.containsKey(sootMethod);
+                    
                     if (info != null) {
-                        populateReachMethod(reachMethod, info, entryPointMap.containsKey(sootMethod));
+                        // Method found via call graph - use call graph results
+                        populateReachMethod(reachMethod, info, isEntryPoint);
+                    } else {
+                        // Method not in call graph - preserve existing direct/indirect analysis results
+                        // but set call graph-specific fields
+                        reachMethod.setEntryPoint(isEntryPoint);
+                        reachMethod.setReachable(false); // Not reachable via call graph
+                        // Preserve existing reachesTarget and targets from direct/indirect analysis
                     }
                 }
             }
@@ -813,6 +822,7 @@ public class ReachabilityAnalysis {
             return null;
         }
     }
+
 
     /**
      * Populate ReachMethod with information from ReachabilityInfo.

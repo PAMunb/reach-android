@@ -1,4 +1,4 @@
-package br.unb.cic.reach.mop;
+package br.unb.cic.reach.android;
 
 import java.io.File;
 import java.util.Collections;

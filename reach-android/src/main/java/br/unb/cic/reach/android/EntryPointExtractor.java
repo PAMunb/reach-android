@@ -1,4 +1,4 @@
-package br.unb.cic.reach.mop;
+package br.unb.cic.reach.android;
 
 import java.util.HashSet;
 import java.util.List;

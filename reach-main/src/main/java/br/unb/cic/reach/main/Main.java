@@ -194,8 +194,9 @@ public class Main {
         // Phase 4: Execute optimized reachability analysis
         log.info("Executing O(N+E) optimized reachability analysis...");
         
-        // Build base AppInfo for consistent scoping
-        AppInfo baseAppInfo = extractor.extractAppInfo();
+        // Build base AppInfo with direct/indirect call analysis included
+        // This ensures both extract-only and full analysis use the same comprehensive approach
+        AppInfo baseAppInfo = extractor.extractAppInfo(targetSignatures);
         System.out.println("DEBUG_REACH: Base AppInfo classes: " + baseAppInfo.getClasses().size()); // DEBUG_REACH
         System.out.println("DEBUG_REACH: Base AppInfo total methods: " + baseAppInfo.getClasses().stream().mapToInt(c -> c.getMethods().size()).sum()); // DEBUG_REACH
         
