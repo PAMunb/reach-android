@@ -183,8 +183,10 @@ public class SootConfig {
         InfoflowAndroidConfiguration config = new InfoflowAndroidConfiguration();
 
         // Basic file configuration
-        config.getAnalysisFileConfig().setTargetAPKFile(new File(apkPath));
-        config.getAnalysisFileConfig().setAndroidPlatformDir(new File(androidPlatformsDir));
+//        config.getAnalysisFileConfig().setTargetAPKFile(new File(apkPath));
+//        config.getAnalysisFileConfig().setAndroidPlatformDir(new File(androidPlatformsDir));
+        config.getAnalysisFileConfig().setTargetAPKFile(apkPath);
+        config.getAnalysisFileConfig().setAndroidPlatformDir(androidPlatformsDir);
 
         // Callback analysis configuration
         config.getCallbackConfig().setEnableCallbacks(true);

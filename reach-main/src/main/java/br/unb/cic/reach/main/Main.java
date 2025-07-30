@@ -167,6 +167,7 @@ public class Main {
         CallGraph callGraph = extractor.buildCallGraph();
         long callGraphTime = System.currentTimeMillis() - callGraphStart;
         log.info("Call graph built in {}ms", callGraphTime);
+        System.out.println("DEBUG_REACH: Call graph edges: " + callGraph.size()); // DEBUG_REACH
 
         // Phase 2: Extract entry points based on ConfigMatrix settings
         log.info("Extracting entry points for types: {}", 
@@ -175,26 +176,38 @@ public class Main {
                     .reduce((a, b) -> a + ", " + b).orElse("none"));
         Set<EntryPoint> entryPoints = extractor.extractEntryPoints();
         log.info("Found {} entry points", entryPoints.size());
+        System.out.println("DEBUG_REACH: Entry points found: " + entryPoints.size()); // DEBUG_REACH
+        for (EntryPoint ep : entryPoints) {
+            System.out.println("DEBUG_REACH:   - " + ep.getSignature() + " [" + ep.getComponentType() + "]"); // DEBUG_REACH
+        }
 
         // Phase 3: Resolve target methods with validation
         Set<String> targetSignatures = loadTargetSignatures(cliArgs.getTargetsFile());
         Set<SootMethod> targetMethods = extractor.resolveTargetMethods(targetSignatures);
         log.info("Resolved {} target methods from {} signatures", 
                 targetMethods.size(), targetSignatures.size());
+        System.out.println("DEBUG_REACH: Target methods resolved: " + targetMethods.size()); // DEBUG_REACH
+        for (SootMethod target : targetMethods) {
+            System.out.println("DEBUG_REACH:   - " + target.getSignature()); // DEBUG_REACH
+        }
 
         // Phase 4: Execute optimized reachability analysis
         log.info("Executing O(N+E) optimized reachability analysis...");
         
         // Build base AppInfo for consistent scoping
         AppInfo baseAppInfo = extractor.extractAppInfo();
+        System.out.println("DEBUG_REACH: Base AppInfo classes: " + baseAppInfo.getClasses().size()); // DEBUG_REACH
+        System.out.println("DEBUG_REACH: Base AppInfo total methods: " + baseAppInfo.getClasses().stream().mapToInt(c -> c.getMethods().size()).sum()); // DEBUG_REACH
         
         // Create strategy (maintained for compatibility, but analysis is optimized internally)
         SootReachabilityStrategy strategy = new SootReachabilityStrategy();
         
         // Execute optimized analysis with ConfigMatrix integration
         ReachabilityAnalysis analysis = new ReachabilityAnalysis();
+        System.out.println("DEBUG_REACH: Starting ReachabilityAnalysis.analyze()"); // DEBUG_REACH
         ReachabilityResult result = analysis.analyze(
             callGraph, entryPoints, targetMethods, strategy, baseAppInfo, configMatrix);
+        System.out.println("DEBUG_REACH: ReachabilityAnalysis.analyze() completed"); // DEBUG_REACH
 
         log.info("Optimized reachability analysis completed");
         return result;

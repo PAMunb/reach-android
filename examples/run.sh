@@ -7,11 +7,11 @@ MOP_JCA_TARGETS="mopMethods.txt"
 APK_FILE="cryptoapp.apk"
 JAR_FILE="cryptolib.jar"
 
-echo "[+] Testing extract-only mode with APK..."
-java -jar ../reach-main/target/reach-analyzer.jar --extract-only -i $APK_FILE -o "extract_only.csv"
-
-#echo "[+] Testing full reachability analysis with APK..."
-#java -jar ../reach-main/target/reach-analyzer.jar -i $APK_FILE -o "full_analysis.csv" -t $MOP_JCA_TARGETS
+#echo "[+] Testing extract-only mode with APK..."
+#java -jar ../reach-main/target/reach-analyzer.jar --extract-only -i $APK_FILE -o "extract_only.csv" -t $MOP_JCA_TARGETS
+#
+echo "[+] Testing full reachability analysis with APK..."
+java -jar ../reach-main/target/reach-analyzer.jar -i $APK_FILE -o "full_analysis.csv" -t $MOP_JCA_TARGETS
 #
 #echo "[+] Testing analysis scope: all-methods vs reachable-only..."
 #java -jar ../reach-main/target/reach-analyzer.jar -i $APK_FILE -o "all_methods.csv" -t $MOP_JCA_TARGETS --analysis-scope all-methods

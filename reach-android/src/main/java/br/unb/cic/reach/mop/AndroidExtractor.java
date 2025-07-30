@@ -101,13 +101,21 @@ public class AndroidExtractor implements ApplicationExtractor {
         log.info("Extracting basic Android application information: {}", apkPath);
 
         try {
-            // Initialize basic Soot for class loading
-            SootConfig.initializeBasic(apkPath, androidPlatformsDir, rtJarPath);
+            // CRITICAL FIX: DO NOT re-initialize Soot here!
+            // When called after buildCallGraph(), Soot is already initialized with InfoflowAndroid
+            // and classes are properly classified as ApplicationClass. Re-initializing with
+            // initializeBasic() causes classes to lose their ApplicationClass status, leading
+            // to incorrect application method classification in reachability analysis.
+            //
+            // The Soot scene is already available from the previous call graph construction,
+            // so we can directly use it without re-initialization.
+            
+            // SootConfig.initializeBasic(apkPath, androidPlatformsDir, rtJarPath); // REMOVED!
 
             // Extract Android-specific information
             AndroidAppInfo androidAppInfo = AppReader.readApk(apkPath);
 
-            // Convert to generic AppInfo
+            // Convert to generic AppInfo using already-initialized Soot scene
             AppInfo genericAppInfo = convertToGenericAppInfo(androidAppInfo, null);
 
             log.info("Basic extraction completed: {} components, {} classes",
@@ -126,8 +134,11 @@ public class AndroidExtractor implements ApplicationExtractor {
         log.info("Extracting Android application information with direct call analysis: {}", apkPath);
 
         try {
-            // Initialize basic Soot for method body analysis
-            SootConfig.initializeBasic(apkPath, androidPlatformsDir, rtJarPath);
+            // CRITICAL FIX: DO NOT re-initialize Soot here either!
+            // Same issue as extractAppInfo() - when called after buildCallGraph(), Soot is already
+            // properly initialized and re-initialization causes loss of ApplicationClass status.
+            
+            // SootConfig.initializeBasic(apkPath, androidPlatformsDir, rtJarPath); // REMOVED!
 
             // Extract Android-specific information
             AndroidAppInfo androidAppInfo = AppReader.readApk(apkPath);
@@ -174,16 +185,21 @@ public class AndroidExtractor implements ApplicationExtractor {
     @Override
     public Set<EntryPoint> extractEntryPoints() {
         log.info("Extracting entry points for Android application: {}", apkPath);
+        System.out.println("DEBUG_REACH: AndroidExtractor.extractEntryPoints() starting"); // DEBUG_REACH
 
         try {
             // Extract Android component information
             AndroidAppInfo androidAppInfo = AppReader.readApk(apkPath);
+            System.out.println("DEBUG_REACH: AndroidAppInfo loaded, total components: " + androidAppInfo.getAllComponents().size()); // DEBUG_REACH
 
             // Filter components by configured types
             Set<ComponentInfo> filteredComponents = filterComponentsByType(androidAppInfo.getAllComponents());
+            System.out.println("DEBUG_REACH: Filtered components: " + filteredComponents.size()); // DEBUG_REACH
+            System.out.println("DEBUG_REACH: Entry point types configured: " + entryPointTypes); // DEBUG_REACH
 
             // Extract entry points from filtered components
             Set<EntryPoint> entryPoints = EntryPointExtractor.extractEntryPoints(filteredComponents, androidAppInfo);
+            System.out.println("DEBUG_REACH: Entry points extracted: " + entryPoints.size()); // DEBUG_REACH
 
             log.info("Entry point extraction completed: {} entry points from {} components",
                     entryPoints.size(), filteredComponents.size());
@@ -203,6 +219,7 @@ public class AndroidExtractor implements ApplicationExtractor {
     @Override
     public Set<SootMethod> resolveTargetMethods(Set<String> signatures) {
         log.info("Resolving {} target method signatures", signatures.size());
+        System.out.println("DEBUG_REACH: AndroidExtractor.resolveTargetMethods() starting with " + signatures.size() + " signatures"); // DEBUG_REACH
 
         Set<SootMethod> sootMethods = new HashSet<>();
         int resolvedCount = 0;
@@ -213,13 +230,16 @@ public class AndroidExtractor implements ApplicationExtractor {
                 sootMethods.add(method);
                 resolvedCount++;
                 log.debug("Resolved target method: {}", signature);
+                System.out.println("DEBUG_REACH: Resolved target: " + signature); // DEBUG_REACH
             } catch (RuntimeException e) {
                 log.warn("Could not resolve target method: {} - {}", signature, e.getMessage());
+                System.out.println("DEBUG_REACH: Failed to resolve target: " + signature + " - " + e.getMessage()); // DEBUG_REACH
             }
         }
 
         log.info("Target method resolution completed: {}/{} methods resolved",
                 resolvedCount, signatures.size());
+        System.out.println("DEBUG_REACH: Target method resolution completed: " + resolvedCount + "/" + signatures.size() + " resolved"); // DEBUG_REACH
 
         return sootMethods;
     }
@@ -280,12 +300,12 @@ public class AndroidExtractor implements ApplicationExtractor {
         // Convert each class to ReachClass with Android component context preservation
         for (SootClass sootClass : applicationClasses) {
             ReachClass reachClass = createReachClass(sootClass, androidAppInfo);
-            System.out.println("ReachClass: " + reachClass);
+//            System.out.println("ReachClass: " + reachClass);
 
             // Process methods in the class with ConfigMatrix-aware analysis
             for (SootMethod sootMethod : sootClass.getMethods()) {
                 ReachMethod reachMethod = new ReachMethod(sootMethod);
-                System.out.println("\t ReachMethod: " + reachMethod);
+//                System.out.println("\t ReachMethod: " + reachMethod);
 
                 // ConfigMatrix Integration Point: Direct call analysis is conditionally executed
                 // based on the analysis mode determined by ConfigMatrix. This architectural
