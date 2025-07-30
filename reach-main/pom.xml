@@ -30,6 +30,10 @@
       <artifactId>jar</artifactId>
     </dependency>
     <dependency>
+      <groupId>br.unb.cic.reach</groupId>
+      <artifactId>mop</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.beust</groupId>
       <artifactId>jcommander</artifactId>
     </dependency>

@@ -1,6 +1,7 @@
 package br.unb.cic.reach.common.writer;
 
 import java.io.File;
+import java.io.IOException;
 
 import br.unb.cic.reach.common.analysis.ReachabilityResult;
 
@@ -32,6 +33,7 @@ public interface Writer {
      *
      * @param result     The reachability analysis results to write
      * @param outputFile The file to write results to
+     * @throws IOException if file writing operations fail
      */
-    void write(ReachabilityResult result, File outputFile);
+    void write(ReachabilityResult result, File outputFile) throws IOException;
 }

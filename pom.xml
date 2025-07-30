@@ -28,37 +28,30 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
-        <soot.version>4.4.1</soot.version>
-        <commons-lang3.version>3.13.0</commons-lang3.version>
-        <commons-io.version>2.13.0</commons-io.version>
-        <guava.version>19.0</guava.version>
-        <android.version>4.1.1.4</android.version>
-        <jaxb.version>2.3.3</jaxb.version>
-        <javaparser.version>3.25.0</javaparser.version>
+        <apktool.version>2.12.0</apktool.version> <!--2.10.0 -->
+        <flowdroid.version>2.14.1</flowdroid.version> <!--2.10.0 -->
+        <gson.version>2.13.1</gson.version> <!-- 2.10.1 -->
         <jcommander.version>1.82</jcommander.version>
-        <apktool.version>2.10.0</apktool.version>
-        <flowdroid.version>2.10.0</flowdroid.version>
-        <gson.version>2.10.1</gson.version>
         <jgrapht.version>1.5.2</jgrapht.version>
-        <slf4j.version>1.7.26</slf4j.version>
-        <logback.version>1.2.6</logback.version>
+        <logback.version>1.5.18</logback.version> <!-- 1.2.6 -->
+        <slf4j.version>2.0.17</slf4j.version> <!-- 1.7.26 -->
 
-        <junit.version>4.13.2</junit.version>
+        <junit.version>5.13.4</junit.version>
 
-        <maven-clean-plugin.version>3.3.1</maven-clean-plugin.version>
+        <maven-clean-plugin.version>3.5.0</maven-clean-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
-        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-        <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
-        <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
-        <maven-assembly-plugin.version>3.6.0</maven-assembly-plugin.version>
-        <maven-release-plugin.version>3.0.1</maven-release-plugin.version>
-        <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
-        <maven-failsafe-plugin.version>3.1.2</maven-failsafe-plugin.version>
+        <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
+        <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
+        <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
+        <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
+        <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
+        <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.5.3</maven-failsafe-plugin.version>
 
-        <jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.13</jacoco-maven-plugin.version>
         <spotbugs-maven-plugin.version>4.7.0.0</spotbugs-maven-plugin.version>
         <fb-contrib.version>7.4.3.sb</fb-contrib.version>
-        <findsecbugs-plugin.version>1.12.0</findsecbugs-plugin.version>
+        <versao.findsecbugs-plugin>1.14.0</versao.findsecbugs-plugin>
         <dependency-check-maven.version>7.1.1</dependency-check-maven.version>
         <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
         <com.puppycrawl.tools.checkstyle.version>10.3</com.puppycrawl.tools.checkstyle.version>
@@ -69,6 +62,7 @@
         <module>reach-apk</module>
         <module>reach-android</module>
         <module>reach-jar</module>
+        <module>reach-mop</module>
         <module>reach-main</module>
     </modules>
 
@@ -92,6 +86,11 @@
             <dependency>
                 <groupId>br.unb.cic.reach</groupId>
                 <artifactId>jar</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>br.unb.cic.reach</groupId>
+                <artifactId>mop</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -150,8 +149,8 @@
             </dependency>
 
             <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
@@ -232,7 +231,58 @@
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${maven-failsafe-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>${versao.spotbugs-maven-plugin}</version>
+                    <configuration>
+                        <effort>Max</effort>
+                        <threshold>Low</threshold>
+                        <failOnError>false</failOnError>
+                        <debug>false</debug>
+                        <includeTests>false</includeTests>
+                        <xmlOutput>true</xmlOutput>
+                        <htmlOutput>true</htmlOutput>
+                        <plugins>
+                            <plugin>
+                                <groupId>com.mebigfatguy.fb-contrib</groupId>
+                                <artifactId>fb-contrib</artifactId>
+                                <version>${fb-contrib.version}</version>
+                            </plugin>
+                            <plugin>
+                                <groupId>com.h3xstream.findsecbugs</groupId>
+                                <artifactId>findsecbugs-plugin</artifactId>
+                                <version>${versao.findsecbugs-plugin}</version>
+                            </plugin>
+                        </plugins>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>${dependency-check-maven.version}</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>aggregate</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+        </plugins>
+
+    </reporting>
 </project>

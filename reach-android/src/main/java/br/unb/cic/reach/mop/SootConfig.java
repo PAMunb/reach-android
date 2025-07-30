@@ -1,4 +1,4 @@
-package br.unb.cic.reach.android;
+package br.unb.cic.reach.mop;
 
 import java.io.File;
 import java.util.Collections;
@@ -183,8 +183,8 @@ public class SootConfig {
         InfoflowAndroidConfiguration config = new InfoflowAndroidConfiguration();
 
         // Basic file configuration
-        config.getAnalysisFileConfig().setTargetAPKFile(apkPath);
-        config.getAnalysisFileConfig().setAndroidPlatformDir(androidPlatformsDir);
+        config.getAnalysisFileConfig().setTargetAPKFile(new File(apkPath));
+        config.getAnalysisFileConfig().setAndroidPlatformDir(new File(androidPlatformsDir));
 
         // Callback analysis configuration
         config.getCallbackConfig().setEnableCallbacks(true);

@@ -1,4 +1,4 @@
-package br.unb.cic.reach.android;
+package br.unb.cic.reach.mop;
 
 import java.util.HashSet;
 import java.util.List;
@@ -19,10 +19,7 @@ import br.unb.cic.reach.common.model.ComponentType;
 import br.unb.cic.reach.common.model.EntryPoint;
 import br.unb.cic.reach.common.model.ReachClass;
 import br.unb.cic.reach.common.model.ReachMethod;
-import soot.Scene;
-import soot.SootClass;
-import soot.SootMethod;
-import soot.Unit;
+import soot.*;
 import soot.jimple.InvokeExpr;
 import soot.jimple.Stmt;
 import soot.jimple.infoflow.android.SetupApplication;
@@ -60,9 +57,20 @@ public class AndroidExtractor implements ApplicationExtractor {
 
     @Override
     public void initialize(Object config) {
-        // TODO: Extract configuration from proper CLI args when implemented
-        // For now, these will be set directly by calling code
-        log.debug("AndroidExtractor initialized");
+        if (config instanceof br.unb.cic.reach.common.model.ConfigMatrix) {
+            br.unb.cic.reach.common.model.ConfigMatrix matrix = (br.unb.cic.reach.common.model.ConfigMatrix) config;
+            this.apkPath = matrix.getInputPath();
+            this.androidPlatformsDir = matrix.getAndroidPlatformsDir();
+            this.rtJarPath = matrix.getRtJarPath();
+            this.timeoutSeconds = matrix.getTimeoutSeconds();
+            this.appPackageOnly = matrix.isAppPackageOnly();
+            this.entryPointTypes = matrix.getEntryPointTypes();
+            
+            log.debug("AndroidExtractor initialized with ConfigMatrix: apk={}, androidDir={}, rtJar={}", 
+                    apkPath, androidPlatformsDir, rtJarPath);
+        } else {
+            log.debug("AndroidExtractor initialized without proper ConfigMatrix configuration");
+        }
     }
 
     /**
@@ -219,19 +227,34 @@ public class AndroidExtractor implements ApplicationExtractor {
     /**
      * Converts Android-specific AppInfo to generic AppInfo structure.
      * <p>
-     * Transforms the Android-specific application information into the generic
-     * format required by the analysis framework, including component type
-     * mapping and optional direct call analysis for target methods.
+     * This method serves as the architectural bridge between Android-specific component
+     * analysis (APK structure, manifest parsing) and the generic reachability analysis
+     * framework. The conversion handles the complex mapping from Android component
+     * concepts to the unified analysis model required by ConfigMatrix-driven algorithms.
      * <p>
-     * ### Conversion Process:
-     * - Basic application metadata transfer
-     * - Component type mapping from Android to generic classifications
-     * - Class and method structure analysis with Soot integration
-     * - Optional direct call analysis for lightweight scenarios
+     * ### Architectural Role in ConfigMatrix System:
+     * The targetMethods parameter directly implements the ConfigMatrix decision tree:
+     * - NULL targetMethods: Extract-only mode where no reachability computation occurs
+     * - NON-NULL targetMethods: Full analysis mode requiring direct call detection
+     * This design ensures that method-level analysis behavior is determined by the
+     * higher-level configuration matrix rather than hardcoded extraction logic.
+     * <p>
+     * ### Component Type Mapping Strategy:
+     * Android components (Activity, Service, BroadcastReceiver, ContentProvider) are
+     * mapped to generic ComponentType enums, preserving semantic meaning while enabling
+     * framework-agnostic analysis algorithms. This abstraction is critical for supporting
+     * future analysis of other platforms (JAR, native binaries) through the same pipeline.
+     * <p>
+     * ### Performance Implications:
+     * The optional direct call analysis represents a significant architectural decision:
+     * when targetMethods is provided, this method performs lightweight static analysis
+     * of method bodies without full call graph construction. This enables the ConfigMatrix
+     * "extract-only + targets" mode to provide meaningful results with minimal overhead,
+     * supporting rapid security screening and API usage detection workflows.
      *
-     * @param androidAppInfo Android-specific application information
-     * @param targetMethods  Optional target methods for direct call analysis
-     * @return Generic AppInfo suitable for analysis framework
+     * @param androidAppInfo Android-specific application information extracted from APK
+     * @param targetMethods  Optional target methods for direct call analysis; null in extract-only mode
+     * @return Generic AppInfo structure compatible with ConfigMatrix-driven analysis pipeline
      */
     private AppInfo convertToGenericAppInfo(AndroidAppInfo androidAppInfo,
                                             Set<SootMethod> targetMethods) {
@@ -244,17 +267,41 @@ public class AndroidExtractor implements ApplicationExtractor {
 
         // Get application classes based on configuration
         List<SootClass> applicationClasses = getApplicationClasses(androidAppInfo);
+        System.out.println("Application classes: " + applicationClasses.size());
+        
+        // ConfigMatrix-driven target method handling: null indicates extract-only mode
+        // where reachability computation is disabled but structure extraction continues
+        if (targetMethods != null) {
+            System.out.println("Target methods: " + targetMethods.size() + " (direct call analysis enabled)");
+        } else {
+            System.out.println("Target methods: none (extract-only mode - no reachability computation)");
+        }
 
-        // Convert each class to ReachClass
+        // Convert each class to ReachClass with Android component context preservation
         for (SootClass sootClass : applicationClasses) {
             ReachClass reachClass = createReachClass(sootClass, androidAppInfo);
+            System.out.println("ReachClass: " + reachClass);
 
-            // Process methods in the class
+            // Process methods in the class with ConfigMatrix-aware analysis
             for (SootMethod sootMethod : sootClass.getMethods()) {
                 ReachMethod reachMethod = new ReachMethod(sootMethod);
+                System.out.println("\t ReachMethod: " + reachMethod);
 
-                // Perform direct call analysis if target methods provided
+                // ConfigMatrix Integration Point: Direct call analysis is conditionally executed
+                // based on the analysis mode determined by ConfigMatrix. This architectural
+                // decision enables the system to support both lightweight extraction (for
+                // structural analysis) and targeted API usage detection (for security analysis)
+                // without requiring full call graph construction in either case.
+                //
+                // The conditional execution here directly implements the ConfigMatrix decision:
+                // - Extract-only mode (targetMethods == null): Skip analysis, preserve structure
+                // - Extract-with-targets mode (targetMethods != null): Perform direct call detection
+                // - Full analysis mode: Delegated to ReachabilityAnalysis with call graph
                 if (targetMethods != null && !targetMethods.isEmpty()) {
+                    // Direct call analysis: examine method bodies for immediate invocations
+                    // of target methods without constructing intermediate call graph representation.
+                    // This provides O(1) per-method analysis complexity rather than O(N*M) 
+                    // graph traversal, enabling rapid security screening workflows.
                     analyzeDirectCalls(reachMethod, sootMethod, targetMethods);
                 }
 
@@ -357,7 +404,7 @@ public class AndroidExtractor implements ApplicationExtractor {
                 SootMethod method = Scene.v().getMethod(signature);
                 methods.add(method);
             } catch (RuntimeException e) {
-                log.debug("Could not resolve method signature: {}", signature);
+                log.warn("Could not resolve method signature: {}", signature);
             }
         }
 
@@ -365,37 +412,189 @@ public class AndroidExtractor implements ApplicationExtractor {
     }
 
     /**
-     * Analyzes method for direct calls to target methods.
-     * <p>
-     * Examines method body to identify direct invocations of target methods,
-     * providing lightweight reachability information without full call graph
-     * construction for performance-optimized analysis scenarios.
+     * Analyzes method for direct calls to target methods, with simple indirect detection.
+     * 
+     * This method examines method bodies for immediate invocations of target methods
+     * and, if none found, performs limited recursive analysis through application methods.
+     * Maintains the original working direct call detection while adding minimal
+     * indirect call capability.
      *
-     * @param reachMethod   The ReachMethod to populate with results
-     * @param sootMethod    The SootMethod to analyze
-     * @param targetMethods Set of target methods to look for
+     * @param reachMethod   The ReachMethod to populate with call analysis results
+     * @param sootMethod    The SootMethod to analyze for target invocations
+     * @param targetMethods Set of target methods to detect in method body
      */
     private void analyzeDirectCalls(ReachMethod reachMethod, SootMethod sootMethod, Set<SootMethod> targetMethods) {
-        if (!sootMethod.hasActiveBody()) {
-            return;
+        Body body;
+        if (sootMethod.hasActiveBody()) {
+            body = sootMethod.getActiveBody();
+        } else {
+            try {
+                body = sootMethod.retrieveActiveBody();
+            } catch (Exception e) {
+                log.debug("Could not retrieve body for method {}: {}", 
+                         sootMethod.getSignature(), e.getMessage());
+                return;
+            }
         }
-
+        
         try {
-            for (Unit unit : sootMethod.getActiveBody().getUnits()) {
-                if (unit instanceof Stmt stmt && stmt.containsInvokeExpr()) {
+            // Phase 1: Direct call detection (original working logic)
+            boolean foundInvoke = false;
+            for (Unit unit : body.getUnits()) {
+                if (unit instanceof Stmt) {
+                    Stmt stmt = (Stmt) unit;
+                    if (stmt.containsInvokeExpr()) {
+                        foundInvoke = true;
+                        InvokeExpr invokeExpr = stmt.getInvokeExpr();
+                        SootMethod calledMethod = invokeExpr.getMethod();
+                        
+                        if (sootMethod.getDeclaringClass().getName().contains("MessageDigestUtil")) {
+                            System.out.println("\t\tMethod: " + sootMethod.getSignature());
+                            System.out.println("\t\t\tCall to: " + calledMethod.getSignature());
+                            System.out.println("\t\t\tTarget methods size: " + targetMethods.size());
+                            System.out.println("\t\t\tContains? " + targetMethods.contains(calledMethod));
+                        }
+                        
+                        if (targetMethods.contains(calledMethod)) {
+                            System.out.println("\t\t\tTARGET : " + calledMethod.getSignature());
+                            reachMethod.setDirectlyReachesTarget(true);
+                            reachMethod.addReachableTarget(calledMethod.getSignature());
+                            reachMethod.setReachesTarget(true);
+                        }
+                    }
+                }
+            }
+            
+            if (sootMethod.getDeclaringClass().getName().contains("MessageDigestUtil") && !foundInvoke) {
+                System.out.println("\t\tMethod: " + sootMethod.getSignature() + " - NO INVOKE EXPRESSIONS FOUND");
+                System.out.println("\t\t\tBody units: " + body.getUnits().size());
+            }
+            
+            // Phase 2: Simple indirect call detection (only if no direct calls found)
+            if (!reachMethod.isReachesTarget()) {
+                analyzeIndirectCalls(reachMethod, sootMethod, targetMethods, body);
+            }
+            
+        } catch (Exception e) {
+            log.debug("Error analyzing direct calls in method {}: {}", sootMethod.getSignature(), e.getMessage());
+        }
+    }
+
+    /**
+     * Simple indirect call analysis for application methods only.
+     * 
+     * Checks if this method calls other application methods that reach targets.
+     * Limited to one level of indirection to keep analysis simple and fast.
+     * 
+     * @param reachMethod The ReachMethod to populate with results
+     * @param sootMethod The containing method being analyzed
+     * @param targetMethods Set of target methods to detect
+     * @param body The method body to analyze
+     */
+    private void analyzeIndirectCalls(ReachMethod reachMethod, SootMethod sootMethod, 
+                                    Set<SootMethod> targetMethods, Body body) {
+        
+        if (sootMethod.getDeclaringClass().getName().contains("MessageDigestUtil")) {
+            System.out.println("\t\tIndirect analysis in method: " + sootMethod.getSignature());
+        }
+        
+        // Check each method call for indirect target access
+        for (Unit unit : body.getUnits()) {
+            if (unit instanceof Stmt) {
+                Stmt stmt = (Stmt) unit;
+                if (stmt.containsInvokeExpr()) {
                     InvokeExpr invokeExpr = stmt.getInvokeExpr();
                     SootMethod calledMethod = invokeExpr.getMethod();
+                    
+                    // Skip direct target calls (already handled)
+                    if (targetMethods.contains(calledMethod)) {
+                        continue;
+                    }
+                    
+                    // Only check application methods to avoid system/library explosion
+                    if (isApplicationMethod(calledMethod)) {
+                        
+                        if (sootMethod.getDeclaringClass().getName().contains("MessageDigestUtil")) {
+                            System.out.println("\t\t\tChecking indirect call to: " + calledMethod.getSignature());
+                        }
+                        
+                        // Check if this application method directly calls targets
+                        Body calledMethodBody = getMethodBody(calledMethod);
+                        if (calledMethodBody != null) {
+                            ReachMethod tempReachMethod = new ReachMethod(calledMethod);
+                            analyzeDirectCallsInBody(calledMethodBody, calledMethod, targetMethods, tempReachMethod);
+                            
+                            if (tempReachMethod.isReachesTarget()) {
+                                System.out.println("\t\t\tINDIRECT TARGET CALL through: " + calledMethod.getSignature());
+                                reachMethod.setReachesTarget(true);
+                                for (String targetSignature : tempReachMethod.getReachableTargets()) {
+                                    reachMethod.addReachableTarget(targetSignature);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
+    /**
+     * Simple direct call analysis on a method body.
+     */
+    private void analyzeDirectCallsInBody(Body body, SootMethod sootMethod, 
+                                        Set<SootMethod> targetMethods, ReachMethod reachMethod) {
+        for (Unit unit : body.getUnits()) {
+            if (unit instanceof Stmt) {
+                Stmt stmt = (Stmt) unit;
+                if (stmt.containsInvokeExpr()) {
+                    InvokeExpr invokeExpr = stmt.getInvokeExpr();
+                    SootMethod calledMethod = invokeExpr.getMethod();
+                    
                     if (targetMethods.contains(calledMethod)) {
                         reachMethod.setDirectlyReachesTarget(true);
                         reachMethod.addReachableTarget(calledMethod.getSignature());
                         reachMethod.setReachesTarget(true);
                     }
                 }
+            }
+        }
+    }
 
+    /**
+     * Checks if a method belongs to application code.
+     */
+    private boolean isApplicationMethod(SootMethod method) {
+        if (method == null || method.getDeclaringClass() == null) {
+            return false;
+        }
+        
+        SootClass declaringClass = method.getDeclaringClass();
+        String className = declaringClass.getName();
+        
+        return declaringClass.isApplicationClass() && 
+               !className.startsWith("java.") &&
+               !className.startsWith("javax.") &&
+               !className.startsWith("android.") &&
+               !className.startsWith("androidx.") &&
+               !className.startsWith("com.google.android.");
+    }
+
+    /**
+     * Safely retrieves method body handling Soot's lazy loading.
+     */
+    private Body getMethodBody(SootMethod method) {
+        if (method == null) {
+            return null;
+        }
+        
+        try {
+            if (method.hasActiveBody()) {
+                return method.getActiveBody();
+            } else {
+                return method.retrieveActiveBody();
             }
         } catch (Exception e) {
-            log.debug("Error analyzing direct calls in method {}: {}", sootMethod.getSignature(), e.getMessage());
+            return null;
         }
     }
 

@@ -2,397 +2,294 @@ package br.unb.cic.reach.main;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import br.unb.cic.reach.common.analysis.SootReachabilityStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
-import br.unb.cic.reach.android.AndroidExtractor;
 import br.unb.cic.reach.common.analysis.ReachabilityAnalysis;
 import br.unb.cic.reach.common.analysis.ReachabilityResult;
+import br.unb.cic.reach.common.analysis.SootReachabilityStrategy;
 import br.unb.cic.reach.common.extractor.ApplicationExtractor;
-import br.unb.cic.reach.main.factory.ExtractorFactory;
+import br.unb.cic.reach.common.model.AnalysisScope;
 import br.unb.cic.reach.common.model.AppInfo;
+import br.unb.cic.reach.common.model.ConfigMatrix;
+import br.unb.cic.reach.common.model.ConfigurationException;
 import br.unb.cic.reach.common.model.EntryPoint;
 import br.unb.cic.reach.common.writer.Writer;
 import br.unb.cic.reach.common.writer.WriterFactory;
-import br.unb.cic.reach.jar.JarExtractor;
+import br.unb.cic.reach.main.factory.ExtractorFactory;
 import soot.SootMethod;
 import soot.jimple.toolkits.callgraph.CallGraph;
 
 /**
- * Main application entry point for reachability analysis.
- * <p>
- * This class serves as the primary interface for executing reachability analysis
- * on different application types (APK, JAR) through a unified command line
- * interface with automatic format detection and analysis orchestration.
- * <p>
- * ### Architectural Decisions:
- * - Facade pattern orchestrating different analysis scenarios
- * - Automatic application type detection and extractor selection
- * - Unified error handling with descriptive user messages
- * - Performance monitoring and logging for analysis transparency
- * <p>
- * ### Role in the System:
- * - Primary user interface for reachability analysis execution
- * - Orchestration point for different analysis workflows
- * - Error handling and user feedback interface
- * - Integration point for CLI configuration and analysis execution
+ * Optimized main application with ConfigMatrix integration and O(N+E) algorithm.
+ * 
+ * This class orchestrates the complete reachability analysis pipeline using the
+ * unified ConfigMatrix system and optimized algorithms. It provides a clean
+ * command-line interface while leveraging the full power of the configuration
+ * matrix for intelligent parameter management and algorithm selection.
+ * 
+ * ### Pipeline Architecture:
+ * 1. Parse and validate CLI parameters
+ * 2. Build ConfigMatrix with intelligent defaults  
+ * 3. Initialize appropriate extractor (APK/JAR)
+ * 4. Execute analysis with optimized algorithms
+ * 5. Generate filtered output based on analysis scope
+ * 6. Provide comprehensive reporting and statistics
+ * 
+ * ### Performance Optimization:
+ * - ConfigMatrix-driven algorithm selection
+ * - O(N+E) reachability analysis with batch processing
+ * - Efficient output filtering during generation
+ * - Minimal memory allocation and optimal data structures
  */
 public class Main {
     private static final Logger log = LoggerFactory.getLogger(Main.class);
 
-    /**
-     * Application entry point for command line execution.
-     * <p>
-     * Processes command line arguments, validates configuration, and executes
-     * appropriate analysis workflow based on input file type and user parameters.
-     *
-     * @param args Command line arguments
-     */
     public static void main(String[] args) {
-        long startTime = System.currentTimeMillis();
-
         try {
-            // Parse and validate command line arguments
-            CommandLineArgs cliArgs = parseCommandLineArgs(args);
+            long startTime = System.currentTimeMillis();
 
+            // Parse and validate command line arguments
+            CommandLineArgs cliArgs = parseAndValidateArgs(args);
             if (cliArgs.isHelp()) {
-                return; // Help already displayed
+                return; // Help was displayed, exit normally
             }
 
-            // Configure logging
-            configureLogging(cliArgs.isDebug());
+            // Build unified configuration matrix
+            ConfigMatrix configMatrix = cliArgs.buildConfigMatrix();
+            log.info("Configuration Matrix initialized:\n{}", configMatrix.getConfigurationSummary());
 
-            // Execute analysis
-            executeAnalysis(cliArgs);
+            // Execute analysis with optimized pipeline
+            ReachabilityResult result = executeAnalysis(cliArgs, configMatrix);
 
-            long executionTime = System.currentTimeMillis() - startTime;
-            log.info("Analysis completed successfully in {} seconds", executionTime / 1000.0);
+            // Write results using configured output format
+            writeResults(result, cliArgs, configMatrix);
+
+            // Log comprehensive final summary
+            long totalTime = System.currentTimeMillis() - startTime;
+            logFinalSummary(result, totalTime);
 
         } catch (ParameterException e) {
-            System.err.println("Parameter error: " + e.getMessage());
-            System.err.println("Use --help for usage information");
+            handleParameterError(e);
+            System.exit(1);
+        } catch (ConfigurationException e) {
+            handleConfigurationError(e);
             System.exit(1);
         } catch (Exception e) {
-            log.error("Analysis failed: {}", e.getMessage(), e);
-            System.err.println("Analysis failed: " + e.getMessage());
+            handleUnexpectedError(e);
             System.exit(1);
         }
     }
 
     /**
-     * Parses and validates command line arguments.
-     * <p>
-     * Processes command line parameters using JCommander, performs validation,
-     * and provides help information when requested.
-     *
-     * @param args Command line arguments
-     * @return Validated CommandLineArgs object
-     * @throws ParameterException if argument parsing or validation fails
+     * Execute optimized reachability analysis with ConfigMatrix integration.
+     * 
+     * This method coordinates the complete analysis pipeline, selecting appropriate
+     * extractors and algorithms based on the configuration matrix. It leverages
+     * the O(N+E) optimized algorithm for significant performance improvements
+     * over the previous O(N×M×C_path) implementation.
      */
-    private static CommandLineArgs parseCommandLineArgs(String[] args) {
-        CommandLineArgs cliArgs = new CommandLineArgs();
-        JCommander commander = new JCommander(cliArgs);
-        commander.setProgramName("reach-analyzer");
-
-        // Show help if no arguments provided
-        if (args.length == 0) {
-            commander.usage();
-            System.exit(0);
-        }
-
-        try {
-            commander.parse(args);
-
-            if (cliArgs.isHelp()) {
-                commander.usage();
-                System.exit(0);
-            }
-
-            // Validate arguments
-            cliArgs.validate();
-
-            return cliArgs;
-
-        } catch (ParameterException e) {
-            System.err.println("Error: " + e.getMessage());
-            commander.usage();
-            throw e;
-        }
-    }
-
-    /**
-     * Configures logging level based on debug flag.
-     */
-    private static void configureLogging(boolean debug) {
-        if (debug) {
-            ch.qos.logback.classic.Logger root =
-                    (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-            root.setLevel(ch.qos.logback.classic.Level.DEBUG);
-            log.info("Debug logging enabled");
-        }
-    }
-
-    /**
-     * Executes analysis based on command line configuration.
-     * <p>
-     * Orchestrates the complete analysis workflow including extractor creation,
-     * configuration, and analysis execution based on the specified parameters
-     * and application type.
-     * <p>
-     * ### Execution Workflow:
-     * - Create appropriate extractor based on input file type
-     * - Configure extractor with user parameters
-     * - Execute extract-only or full analysis based on configuration
-     * - Generate output using specified writer format
-     * - Provide comprehensive logging and error handling
-     *
-     * @param cliArgs Validated command line arguments
-     * @throws Exception if analysis execution fails
-     */
-    private static void executeAnalysis(CommandLineArgs cliArgs) throws Exception {
-        log.info("Starting reachability analysis");
-        log.info("Input: {}", cliArgs.getInputPath());
-        log.info("Output: {}", cliArgs.getOutputFile());
-        log.info("Mode: {}", cliArgs.isExtractOnly() ? "Extract Only" : "Full Analysis");
-
-        // Create and configure appropriate extractor
-        ApplicationExtractor extractor = createExtractor(cliArgs);
-
-        // Execute analysis based on mode
-        ReachabilityResult result;
-        if (cliArgs.isExtractOnly()) {
-            result = executeExtractOnly(cliArgs, extractor);
-        } else {
-            result = executeFullAnalysis(cliArgs, extractor);
-        }
-
-        // Write results
-        writeResults(result, cliArgs);
-
-        // Log summary
-        logAnalysisSummary(result);
-    }
-
-    /**
-     * Creates and configures appropriate extractor for the input file.
-     * <p>
-     * Uses factory pattern to create the correct extractor type and configures
-     * it with user-provided parameters for the specific application format.
-     *
-     * @param cliArgs Command line arguments for configuration
-     * @return Configured ApplicationExtractor
-     * @throws Exception if extractor creation or configuration fails
-     */
-    private static ApplicationExtractor createExtractor(CommandLineArgs cliArgs) throws Exception {
+    private static ReachabilityResult executeAnalysis(CommandLineArgs cliArgs, 
+                                                    ConfigMatrix configMatrix) throws Exception {
+        
+        // Initialize appropriate extractor based on file type
         ApplicationExtractor extractor = ExtractorFactory.create(cliArgs.getInputPath());
+        extractor.initialize(configMatrix);
 
-        // Configure extractor based on type
-        if (extractor instanceof AndroidExtractor androidExtractor) {
-            androidExtractor.setAndroidConfig(
-                    cliArgs.getInputPath(),
-                    cliArgs.getAndroidDir(),
-                    cliArgs.getRtJar(),
-                    cliArgs.getTimeout(),
-                    cliArgs.isAppPackageOnly(),
-                    cliArgs.getEntryPointTypesSet()
-            );
-        } else if (extractor instanceof JarExtractor jarExtractor) {
-            jarExtractor.setJarPath(cliArgs.getInputPath());
+        if (configMatrix.isExtractOnly()) {
+            return executeExtractOnlyAnalysis(cliArgs, extractor, configMatrix);
+        } else {
+            return executeFullReachabilityAnalysis(cliArgs, extractor, configMatrix);
         }
-
-        extractor.initialize(cliArgs);
-
-        return extractor;
     }
 
     /**
-     * Executes extract-only analysis workflow.
-     * <p>
-     * Performs lightweight analysis without call graph construction,
-     * suitable for fast information extraction or direct call analysis
-     * scenarios with minimal performance overhead.
-     * <p>
-     * ### Extract-Only Workflow:
-     * - Basic application information extraction
-     * - Optional direct call analysis if targets provided
-     * - No call graph construction for performance optimization
-     * - Result packaging for consistent output format
-     *
-     * @param cliArgs   Command line arguments
-     * @param extractor Configured application extractor
-     * @return ReachabilityResult containing extraction results
-     * @throws Exception if extraction fails
+     * Execute extract-only analysis for basic application information.
+     * 
+     * This mode provides fast application structure analysis without
+     * call graph construction or reachability computation. It supports
+     * direct call detection when targets are provided.
      */
-    private static ReachabilityResult executeExtractOnly(CommandLineArgs cliArgs,
-                                                         ApplicationExtractor extractor) throws Exception {
-
+    private static ReachabilityResult executeExtractOnlyAnalysis(CommandLineArgs cliArgs,
+                                                               ApplicationExtractor extractor,
+                                                               ConfigMatrix configMatrix) throws Exception {
         log.info("Executing extract-only analysis");
-
+        
+        Set<String> targetSignatures = loadTargetSignatures(cliArgs.getTargetsFile());
         AppInfo appInfo;
-
-        if (cliArgs.getTargetsFile() != null) {
-            // Extract with direct call analysis
-            Set<String> targetSignatures = readTargetMethods(cliArgs.getTargetsFile());
-            log.info("Performing direct call analysis with {} target methods", targetSignatures.size());
+        
+        if (targetSignatures != null && !targetSignatures.isEmpty()) {
+            log.info("Analyzing direct calls to {} target methods", targetSignatures.size());
             appInfo = extractor.extractAppInfo(targetSignatures);
         } else {
-            // Basic extraction only
-            log.info("Performing basic information extraction");
+            log.info("Extracting application information without target analysis");
             appInfo = extractor.extractAppInfo();
         }
-
-        // Create result container
+        
+        log.info("Extract-only analysis completed: {} classes, {} total methods",
+                appInfo.getClasses().size(),
+                appInfo.getClasses().stream().mapToInt(c -> c.getMethods().size()).sum());
+        
         ReachabilityResult result = new ReachabilityResult(appInfo);
-        result.setExecutionTime(System.currentTimeMillis());
-
-        log.info("Extract-only analysis completed");
-
+        result.setConfigMatrix(configMatrix);
         return result;
     }
 
     /**
-     * Executes full reachability analysis workflow.
-     * <p>
-     * Performs comprehensive reachability analysis including call graph
-     * construction, entry point extraction, and complete path discovery
-     * for detailed analysis results with full reachability information.
-     * <p>
-     * ### Full Analysis Workflow:
-     * - Call graph construction using application-specific algorithms
-     * - Entry point extraction based on application type and configuration
-     * - Target method resolution and validation
-     * - Comprehensive reachability analysis with path discovery
-     * - Result consolidation and performance metrics collection
-     *
-     * @param cliArgs   Command line arguments
-     * @param extractor Configured application extractor
-     * @return ReachabilityResult containing comprehensive analysis results
-     * @throws Exception if analysis fails
+     * Execute full reachability analysis with optimized O(N+E) algorithm.
+     * 
+     * This method implements the complete optimized analysis pipeline:
+     * - Call graph construction with intelligent configuration
+     * - Entry point extraction based on ConfigMatrix settings
+     * - Target method resolution with comprehensive validation
+     * - O(N+E) batch reachability analysis with reverse graph optimization
+     * - Result integration with ConfigMatrix metadata
      */
-    private static ReachabilityResult executeFullAnalysis(CommandLineArgs cliArgs,
-                                                          ApplicationExtractor extractor) throws Exception {
+    private static ReachabilityResult executeFullReachabilityAnalysis(CommandLineArgs cliArgs,
+                                                                    ApplicationExtractor extractor,
+                                                                    ConfigMatrix configMatrix) throws Exception {
+        log.info("Executing full reachability analysis with algorithm: {}", 
+                configMatrix.getReachabilityAlgorithm().getValue());
 
-        log.info("Executing full reachability analysis");
-
-        // Validate target methods file for full analysis
-        if (cliArgs.getTargetsFile() == null) {
-            throw new IllegalArgumentException("Target methods file required for full reachability analysis");
-        }
-
-        // Build call graph
+        // Phase 1: Build call graph with intelligent configuration
         log.info("Building call graph...");
+        long callGraphStart = System.currentTimeMillis();
         CallGraph callGraph = extractor.buildCallGraph();
+        long callGraphTime = System.currentTimeMillis() - callGraphStart;
+        log.info("Call graph built in {}ms", callGraphTime);
 
-        // Extract entry points
-        log.info("Extracting entry points...");
+        // Phase 2: Extract entry points based on ConfigMatrix settings
+        log.info("Extracting entry points for types: {}", 
+                configMatrix.getEntryPointTypes().stream()
+                    .map(type -> type.name().toLowerCase())
+                    .reduce((a, b) -> a + ", " + b).orElse("none"));
         Set<EntryPoint> entryPoints = extractor.extractEntryPoints();
+        log.info("Found {} entry points", entryPoints.size());
 
-        // Read and resolve target methods
-        Set<String> targetSignatures = readTargetMethods(cliArgs.getTargetsFile());
-        log.info("Resolving {} target methods...", targetSignatures.size());
+        // Phase 3: Resolve target methods with validation
+        Set<String> targetSignatures = loadTargetSignatures(cliArgs.getTargetsFile());
         Set<SootMethod> targetMethods = extractor.resolveTargetMethods(targetSignatures);
+        log.info("Resolved {} target methods from {} signatures", 
+                targetMethods.size(), targetSignatures.size());
 
-        // Perform reachability analysis
-        log.info("Performing reachability analysis...");
+        // Phase 4: Execute optimized reachability analysis
+        log.info("Executing O(N+E) optimized reachability analysis...");
+        
+        // Build base AppInfo for consistent scoping
+        AppInfo baseAppInfo = extractor.extractAppInfo();
+        
+        // Create strategy (maintained for compatibility, but analysis is optimized internally)
+        SootReachabilityStrategy strategy = new SootReachabilityStrategy();
+        
+        // Execute optimized analysis with ConfigMatrix integration
         ReachabilityAnalysis analysis = new ReachabilityAnalysis();
-
         ReachabilityResult result = analysis.analyze(
-                callGraph,
-                entryPoints,
-                targetMethods,
-                new SootReachabilityStrategy()
-        );
+            callGraph, entryPoints, targetMethods, strategy, baseAppInfo, configMatrix);
 
-        // Set analysis metrics
-        result.setEntryPointCount(entryPoints.size());
-        result.setTargetMethodCount(targetMethods.size());
-        result.setExecutionTime(System.currentTimeMillis());
-
-        log.info("Full reachability analysis completed");
-
+        log.info("Optimized reachability analysis completed");
         return result;
     }
 
-
     /**
-     * Writes analysis results using specified writer format.
-     * <p>
-     * Creates appropriate writer based on user configuration and outputs
-     * analysis results in the requested format with comprehensive error
-     * handling and validation.
-     *
-     * @param result  Analysis results to write
-     * @param cliArgs Command line arguments for output configuration
-     * @throws Exception if result writing fails
+     * Write results using ConfigMatrix-driven output configuration.
+     * 
+     * This method handles the output generation with analysis scope filtering
+     * and comprehensive statistics reporting. The ConfigMatrix provides unified
+     * access to all output configuration parameters.
      */
-    private static void writeResults(ReachabilityResult result, CommandLineArgs cliArgs) throws Exception {
-        log.info("Writing results to: {}", cliArgs.getOutputFile());
+    private static void writeResults(ReachabilityResult result, CommandLineArgs cliArgs, 
+                                   ConfigMatrix configMatrix) throws IOException {
+        log.info("Writing results to: {} (format: {}, scope: {})", 
+                cliArgs.getOutputFile(), 
+                configMatrix.getWriterType().getExtension(),
+                configMatrix.getAnalysisScope().getValue());
 
-        Writer writer = WriterFactory.create(cliArgs.getWriterTypeEnum());
+        // Create appropriate writer based on ConfigMatrix
+        Writer writer = WriterFactory.create(configMatrix.getWriterType().getExtension());
+        
         File outputFile = new File(cliArgs.getOutputFile());
-
         writer.write(result, outputFile);
 
         log.info("Results written successfully");
     }
 
     /**
-     * Reads target method signatures from file.
-     * <p>
-     * Parses target methods file to extract method signatures for reachability
-     * analysis, supporting comments and empty lines for user convenience.
-     * <p>
-     * ### File Format Support:
-     * - One method signature per line
-     * - Comment lines starting with # or //
-     * - Empty lines ignored
-     * - Whitespace trimming for robustness
-     *
-     * @param fileName Path to target methods file
-     * @return Set of method signatures
-     * @throws IOException if file reading fails
+     * Load target method signatures from file.
+     * 
+     * This method handles target file parsing with comprehensive error handling
+     * and comment/empty line filtering for clean target specification.
      */
-    private static Set<String> readTargetMethods(String fileName) throws IOException {
+    private static Set<String> loadTargetSignatures(String targetsFile) throws IOException {
+        if (targetsFile == null) {
+            return Collections.emptySet();
+        }
+
         Set<String> signatures = new HashSet<>();
-
-        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+        try (BufferedReader reader = Files.newBufferedReader(Paths.get(targetsFile))) {
             String line;
-            while ((line = br.readLine()) != null) {
+            int lineNumber = 0;
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
                 line = line.trim();
-
+                
                 // Skip empty lines and comments
-                if (!line.isEmpty() && !line.startsWith("#") && !line.startsWith("//")) {
+                if (!line.isEmpty() && !line.startsWith("#")) {
                     signatures.add(line);
                 }
             }
         }
 
-        log.debug("Read {} target method signatures from {}", signatures.size(), fileName);
-
+        log.info("Loaded {} target signatures from: {}", signatures.size(), targetsFile);
         return signatures;
     }
 
     /**
-     * Logs comprehensive analysis summary for user feedback.
-     * <p>
-     * Provides detailed information about analysis results including
-     * performance metrics, coverage statistics, and result counts
-     * for user understanding and validation.
-     *
-     * @param result Analysis results to summarize
+     * Parse and validate command line arguments with comprehensive error handling.
      */
-    private static void logAnalysisSummary(ReachabilityResult result) {
-        log.info("=== Analysis Summary ===");
+    private static CommandLineArgs parseAndValidateArgs(String[] args) throws ParameterException {
+        CommandLineArgs cliArgs = new CommandLineArgs();
+        JCommander commander = new JCommander(cliArgs);
 
+        try {
+            commander.parse(args);
+            
+            if (cliArgs.isHelp()) {
+                commander.usage();
+                return cliArgs;
+            }
+            
+            cliArgs.validate();
+            return cliArgs;
+        } catch (ParameterException e) {
+            System.err.println("Parameter error: " + e.getMessage());
+            System.err.println();
+            commander.usage();
+            throw e;
+        }
+    }
+
+    /**
+     * Log comprehensive final summary with ConfigMatrix details.
+     * 
+     * This method provides detailed feedback about the analysis execution
+     * including configuration parameters, performance metrics, and result
+     * statistics for complete analysis transparency.
+     */
+    private static void logFinalSummary(ReachabilityResult result, long totalTime) {
+        log.info("");
+        log.info("=== ANALYSIS COMPLETED ===");
+
+        // Application information
         AppInfo appInfo = result.getAppInfo();
         if (appInfo != null) {
             log.info("Application: {} ({})", appInfo.getLabel(), appInfo.getType());
@@ -400,25 +297,62 @@ public class Main {
             log.info("Classes analyzed: {}", appInfo.getClasses().size());
 
             int totalMethods = appInfo.getClasses().stream()
-                    .mapToInt(clazz -> clazz.getMethods().size())
-                    .sum();
-            log.info("Methods analyzed: {}", totalMethods);
+                .mapToInt(clazz -> clazz.getMethods().size())
+                .sum();
+            log.info("Total methods: {}", totalMethods);
+
+            // Analysis scope specific metrics
+            AnalysisScope scope = result.getAnalysisScope();
+            log.info("Analysis scope: {}", scope.getValue());
+            
+            if (scope == AnalysisScope.REACHABLE_ONLY && totalMethods > 0) {
+                int reachableMethods = result.getReachableMethodCount();
+                double reachabilityRate = (reachableMethods * 100.0) / totalMethods;
+                log.info("Reachable methods: {} ({:.1f}% of total)", 
+                        reachableMethods, reachabilityRate);
+            }
+
+            int targetReachingMethods = result.getTargetReachingMethodCount();
+            log.info("Target-reaching methods: {}", targetReachingMethods);
         }
 
-        if (result.getEntryPointCount() > 0) {
-            log.info("Entry points: {}", result.getEntryPointCount());
+        // Configuration and performance information
+        ConfigMatrix configMatrix = result.getConfigMatrix();
+        if (configMatrix != null) {
+            log.info("Algorithm: {}", configMatrix.getReachabilityAlgorithm().getValue());
+            log.info("Performance priority: {}", configMatrix.getPerformancePriority().getValue());
+            log.info("Configuration: {}", configMatrix.getMatrixPosition());
         }
 
-        if (result.getTargetMethodCount() > 0) {
-            log.info("Target methods: {}", result.getTargetMethodCount());
-            log.info("Reachable methods: {}", result.getReachableMethodCount());
-            log.info("Target-reaching methods: {}", result.getTargetReachingMethodCount());
-        }
+        log.info("Entry points: {}", result.getEntryPointCount());
+        log.info("Target methods: {}", result.getTargetMethodCount());
+        log.info("Analysis time: {}ms", result.getExecutionTime());
+        log.info("Total execution time: {}ms", totalTime);
+        log.info("===========================");
+    }
 
-        if (result.getExecutionTime() > 0) {
-            log.info("Execution time: {} seconds", result.getExecutionTime() / 1000.0);
-        }
+    // Error handling methods
 
-        log.info("========================");
+    private static void handleParameterError(ParameterException e) {
+        System.err.println("Error: Invalid command line parameters");
+        System.err.println(e.getMessage());
+        System.err.println("\nUse --help for usage information");
+    }
+
+    private static void handleConfigurationError(ConfigurationException e) {
+        System.err.println("Error: Configuration validation failed");
+        System.err.println(e.getMessage());
+        System.err.println("\nPlease check your parameter combinations");
+    }
+
+    private static void handleUnexpectedError(Exception e) {
+        System.err.println("Error: Unexpected analysis failure");
+        System.err.println(e.getMessage());
+
+        log.error("Unexpected error during analysis", e);
+        System.err.println("\nThis appears to be a system error. Please report with:");
+        System.err.println("1. The command line used");
+        System.err.println("2. The input file (if shareable)");
+        System.err.println("3. The complete error log");
     }
 }

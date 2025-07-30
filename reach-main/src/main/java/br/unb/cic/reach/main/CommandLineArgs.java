@@ -4,31 +4,38 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.beust.jcommander.Parameter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
+
+import br.unb.cic.reach.common.model.AnalysisScope;
 import br.unb.cic.reach.common.model.ComponentType;
+import br.unb.cic.reach.common.model.ConfigMatrix;
+import br.unb.cic.reach.common.model.ConfigurationException;
 import br.unb.cic.reach.common.writer.WriterType;
 
 /**
- * Command line argument configuration for reachability analysis.
- *
- * This class defines and validates command line parameters for configuring
- * reachability analysis behavior, including application selection, analysis
- * scope, and output formatting options with automatic format detection.
- *
- * ### Architectural Decisions:
- * - Automatic application type detection based on file extensions
- * - Sensible defaults for common analysis scenarios
- * - Comprehensive parameter validation with descriptive error messages
- * - Support for both Android APK and Java JAR analysis
- *
- * ### Role in the System:
- * - Command line interface configuration and validation
- * - Parameter processing and type conversion
- * - Default value management for user convenience
- * - Integration point between CLI and analysis execution
+ * Command line arguments with integrated ConfigMatrix support.
+ * 
+ * This class provides a simplified interface for command line parameter processing
+ * while leveraging ConfigMatrix for unified configuration management. It maintains
+ * backward compatibility while enabling the full power of the configuration matrix
+ * system including analysis scope filtering and optimized algorithm selection.
+ * 
+ * ### Configuration Integration:
+ * - Direct ConfigMatrix construction from CLI parameters
+ * - Intelligent defaults based on application characteristics
+ * - Comprehensive validation with clear error messages
+ * - Support for all analysis scope and algorithm combinations
+ * 
+ * ### Simplified Parameter Set:
+ * The CLI focuses on essential user-facing parameters while ConfigMatrix
+ * handles the complex interactions and algorithmic optimizations internally.
  */
 public class CommandLineArgs {
+    private static final Logger log = LoggerFactory.getLogger(CommandLineArgs.class);
 
     @Parameter(names = {"--input", "-i"},
             description = "Input file (APK or JAR)", required = true)
@@ -50,6 +57,18 @@ public class CommandLineArgs {
             description = "Extract information only, skip reachability analysis")
     private boolean extractOnly = false;
 
+    /**
+     * Analysis scope parameter for output filtering.
+     * 
+     * This parameter directly maps to AnalysisScope and controls
+     * which methods appear in the final output based on their reachability status.
+     * The ConfigMatrix handles the complex interactions with other parameters
+     * and provides appropriate warnings for incompatible combinations.
+     */
+    @Parameter(names = {"--analysis-scope"},
+            description = "Scope of methods to include in output: all-methods (default) or reachable-only")
+    private String analysisScope = "all-methods";
+
     @Parameter(names = {"--writer", "-w"},
             description = "Output format: csv, json (default: csv)")
     private String writerType = "csv";
@@ -60,7 +79,7 @@ public class CommandLineArgs {
     private String androidDir;
 
     @Parameter(names = {"--rt-jar", "-r"},
-            description = "Runtime JAR path (default: ~/.sdkman/candidates/java/8.0.302-open/jre/lib/rt.jar)")
+            description = "Runtime JAR path (default: standard Java installation)")
     private String rtJar;
 
     @Parameter(names = {"--timeout"},
@@ -84,56 +103,57 @@ public class CommandLineArgs {
     private boolean help = false;
 
     /**
-     * Initializes command line arguments with default values.
-     *
-     * Sets up default values for Android and Java runtime paths based on
-     * common environment configurations and standard installation locations.
+     * Initialize command line arguments with environment-based defaults.
      */
     public CommandLineArgs() {
         initializeDefaults();
     }
 
     /**
-     * Initializes default values for configuration parameters.
+     * Build ConfigMatrix from command line parameters.
+     * 
+     * This method constructs a complete ConfigMatrix instance using the CLI parameters
+     * as input, applying intelligent defaults and validation. The ConfigMatrix handles
+     * the complex parameter interactions and algorithm selection automatically.
+     * 
+     * ### Configuration Process:
+     * 1. Parse basic parameters (scope, entry points, etc.)
+     * 2. Apply intelligent defaults based on input characteristics
+     * 3. Validate parameter combinations and warn about conflicts
+     * 4. Select optimal algorithms based on configuration and estimated complexity
+     * 
+     * @return Fully configured ConfigMatrix ready for analysis execution
+     * @throws ConfigurationException if parameter validation fails
      */
-    private void initializeDefaults() {
-        // Android platforms directory default
-        String androidHome = System.getenv("ANDROID_HOME");
-        if (androidHome != null) {
-            androidDir = androidHome + File.separatorChar + "platforms";
-        }
-
-        // RT JAR default to SDKMAN Java 8 installation
-        String userHome = System.getProperty("user.home");
-        if (userHome != null) {
-            rtJar = userHome + File.separatorChar + ".sdkman" + File.separatorChar +
-                    "candidates" + File.separatorChar + "java" + File.separatorChar +
-                    "8.0.302-open" + File.separatorChar + "jre" + File.separatorChar +
-                    "lib" + File.separatorChar + "rt.jar";
-        }
+    public ConfigMatrix buildConfigMatrix() throws ConfigurationException {
+        return new ConfigMatrix.Builder()
+            .withAnalysisScope(AnalysisScope.fromString(analysisScope))
+            .withAppPackageOnly(appPackageOnly)
+            .withEntryPointTypes(parseEntryPointTypes(entryPointTypes))
+            .withExtractOnly(extractOnly)
+            .withWriterType(WriterType.fromString(writerType))
+            .withTimeout(timeout)
+            .withInputPath(inputPath)
+            .withTargetsFile(targetsFile)
+            .withEntryPointsFile(entryPointsFile)
+            .withOutputFile(outputFile)
+            .withAndroidPlatformsDir(androidDir)
+            .withRtJarPath(rtJar)
+            .build();
     }
 
     /**
-     * Validates command line arguments for consistency and completeness.
-     *
-     * Performs comprehensive validation of parameter combinations and
-     * file accessibility, providing clear error messages for configuration
-     * issues and missing dependencies.
-     *
-     * ### Validation Rules:
-     * - Input file existence and readability
-     * - Android-specific parameter requirements for APK files
-     * - Target file requirements for reachability analysis
-     * - Output directory writability
-     * - Parameter combination consistency
-     *
-     * @throws IllegalArgumentException if validation fails with descriptive message
+     * Validate all command line parameters with comprehensive error reporting.
+     * 
+     * This method performs validation of file paths, parameter combinations,
+     * and configuration consistency. It provides detailed error messages to
+     * help users correct configuration issues.
      */
-    public void validate() {
+    public void validate() throws ParameterException {
         // Validate input file
         File input = new File(inputPath);
         if (!input.exists() || !input.canRead()) {
-            throw new IllegalArgumentException("Input file not found or not readable: " + inputPath);
+            throw new ParameterException("Input file not found or not readable: " + inputPath);
         }
 
         // Determine application type and validate specific requirements
@@ -142,14 +162,14 @@ public class CommandLineArgs {
         } else if (inputPath.toLowerCase().endsWith(".jar")) {
             validateJarParameters();
         } else {
-            throw new IllegalArgumentException("Unsupported file format. Supported: .apk, .jar");
+            throw new ParameterException("Unsupported file format. Supported: .apk, .jar");
         }
 
         // Validate target file if provided
         if (targetsFile != null) {
             File targets = new File(targetsFile);
             if (!targets.exists() || !targets.canRead()) {
-                throw new IllegalArgumentException("Target methods file not found or not readable: " + targetsFile);
+                throw new ParameterException("Target methods file not found or not readable: " + targetsFile);
             }
         }
 
@@ -158,7 +178,7 @@ public class CommandLineArgs {
         File outputDir = output.getParentFile();
         if (outputDir != null && !outputDir.exists()) {
             if (!outputDir.mkdirs()) {
-                throw new IllegalArgumentException("Cannot create output directory: " + outputDir);
+                throw new ParameterException("Cannot create output directory: " + outputDir);
             }
         }
 
@@ -166,68 +186,39 @@ public class CommandLineArgs {
         try {
             WriterType.fromString(writerType);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid writer type: " + writerType + ". Supported: csv, json");
+            throw new ParameterException("Invalid writer type: " + writerType + ". Supported: csv, json");
+        }
+
+        // Validate ConfigMatrix construction - this catches parameter interaction issues
+        try {
+            buildConfigMatrix();
+        } catch (ConfigurationException e) {
+            throw new ParameterException("Configuration validation failed: " + e.getMessage());
         }
     }
 
     /**
-     * Validates Android-specific parameters.
+     * Parse entry point types into ComponentType set.
+     * 
+     * This method handles the complexity of parsing various entry point specifications,
+     * including the "all" shorthand and comma-separated component lists.
      */
-    private void validateAndroidParameters() {
-        if (androidDir == null) {
-            throw new IllegalArgumentException("Android platforms directory required for APK analysis. " +
-                    "Use -d parameter or set ANDROID_HOME environment variable.");
-        }
-
-        File androidDirFile = new File(androidDir);
-        if (!androidDirFile.exists() || !androidDirFile.isDirectory()) {
-            throw new IllegalArgumentException("Android platforms directory not found: " + androidDir);
-        }
-
-        if (rtJar == null) {
-            throw new IllegalArgumentException("Runtime JAR path required for APK analysis. Use -r parameter.");
-        }
-
-        File rtJarFile = new File(rtJar);
-        if (!rtJarFile.exists() || !rtJarFile.canRead()) {
-            throw new IllegalArgumentException("Runtime JAR not found or not readable: " + rtJar);
-        }
-    }
-
-    /**
-     * Validates JAR-specific parameters.
-     */
-    private void validateJarParameters() {
-        // For reachability analysis, targets are required
-        if (!extractOnly && targetsFile == null) {
-            throw new IllegalArgumentException("Target methods file required for JAR reachability analysis. " +
-                    "Use -t parameter or --extract-only for basic extraction.");
-        }
-    }
-
-    /**
-     * Parses entry point types from string specification.
-     *
-     * Converts comma-separated string of component types to Set of ComponentType
-     * enums, supporting both individual types and the "all" shorthand.
-     *
-     * @return Set of ComponentType enums representing requested entry point types
-     */
-    public Set<ComponentType> getEntryPointTypesSet() {
-        if ("all".equalsIgnoreCase(entryPointTypes)) {
+    private Set<ComponentType> parseEntryPointTypes(String typesString) {
+        if ("all".equalsIgnoreCase(typesString)) {
             return Set.of(ComponentType.ACTIVITY, ComponentType.SERVICE,
                     ComponentType.RECEIVER, ComponentType.PROVIDER);
         }
 
         Set<ComponentType> types = new HashSet<>();
-        for (String type : entryPointTypes.split(",")) {
+        for (String type : typesString.split(",")) {
             String trimmed = type.trim().toLowerCase();
             switch (trimmed) {
                 case "activities" -> types.add(ComponentType.ACTIVITY);
                 case "services" -> types.add(ComponentType.SERVICE);
                 case "receivers" -> types.add(ComponentType.RECEIVER);
                 case "providers" -> types.add(ComponentType.PROVIDER);
-                default -> throw new IllegalArgumentException("Invalid entry point type: " + type);
+                default -> throw new IllegalArgumentException("Invalid entry point type: " + type +
+                        ". Valid options: activities, services, receivers, providers, all");
             }
         }
 
@@ -235,22 +226,126 @@ public class CommandLineArgs {
     }
 
     /**
-     * Gets writer type as enum.
+     * Initialize default values based on environment configuration.
      */
-    public WriterType getWriterTypeEnum() {
-        return WriterType.fromString(writerType);
+    private void initializeDefaults() {
+        // Android platforms directory default
+        String androidHome = System.getenv("ANDROID_HOME");
+        if (androidHome != null) {
+            androidDir = androidHome + File.separatorChar + "platforms";
+        }
+
+        // RT JAR default to system Java installation
+        // First try to find Java 8 rt.jar in SDKMAN (most compatible with Soot)
+        String userHome = System.getProperty("user.home");
+        if (userHome != null) {
+            // Try SDKMAN Java 8 first (most compatible)
+            String sdkmanJava8 = userHome + File.separatorChar + ".sdkman" + File.separatorChar +
+                    "candidates" + File.separatorChar + "java" + File.separatorChar +
+                    "8.0.302-open" + File.separatorChar + "jre" + File.separatorChar +
+                    "lib" + File.separatorChar + "rt.jar";
+            
+            if (new File(sdkmanJava8).exists()) {
+                rtJar = sdkmanJava8;
+            } else {
+                // Try system Java (may not work well with newer versions)
+                String javaHome = System.getProperty("java.home");
+                if (javaHome != null) {
+                    String systemRtJar = javaHome + File.separatorChar + "lib" + File.separatorChar + "rt.jar";
+                    if (new File(systemRtJar).exists()) {
+                        rtJar = systemRtJar;
+                    } else {
+                        // Warn about potential compatibility issues with newer Java
+                        log.warn("No rt.jar found. Soot/FlowDroid may not work properly with Java 9+. " +
+                                "Consider installing Java 8 via SDKMAN for better compatibility.");
+                    }
+                }
+            }
+        }
     }
 
-    // Getters
+    /**
+     * Validate Android-specific parameters.
+     */
+    private void validateAndroidParameters() throws ParameterException {
+        if (androidDir == null) {
+            throw new ParameterException("Android platforms directory required for APK analysis. " +
+                    "Use --android-dir parameter or set ANDROID_HOME environment variable.");
+        }
+
+        File androidDirFile = new File(androidDir);
+        if (!androidDirFile.exists() || !androidDirFile.isDirectory()) {
+            throw new ParameterException("Android platforms directory not found: " + androidDir);
+        }
+
+        if (rtJar == null) {
+            throw new ParameterException("Runtime JAR path required for APK analysis. Use --rt-jar parameter.");
+        }
+
+        File rtJarFile = new File(rtJar);
+        if (!rtJarFile.exists() || !rtJarFile.canRead()) {
+            throw new ParameterException("Runtime JAR not found or not readable: " + rtJar);
+        }
+    }
+
+    /**
+     * Validate JAR-specific parameters.
+     */
+    private void validateJarParameters() throws ParameterException {
+        // For reachability analysis, targets are required
+        if (!extractOnly && targetsFile == null) {
+            throw new ParameterException("Target methods file required for JAR reachability analysis. " +
+                    "Use --targets parameter or --extract-only for basic extraction.");
+        }
+    }
+
+    // Getters for legacy compatibility
     public String getInputPath() { return inputPath; }
     public String getTargetsFile() { return targetsFile; }
     public String getEntryPointsFile() { return entryPointsFile; }
     public String getOutputFile() { return outputFile; }
     public boolean isExtractOnly() { return extractOnly; }
+    public String getAnalysisScope() { return analysisScope; }
     public String getAndroidDir() { return androidDir; }
     public String getRtJar() { return rtJar; }
     public int getTimeout() { return timeout; }
     public boolean isAppPackageOnly() { return appPackageOnly; }
     public boolean isDebug() { return debug; }
     public boolean isHelp() { return help; }
+
+    // Setters for testing and programmatic usage
+    public void setInputPath(String inputPath) { this.inputPath = inputPath; }
+    public void setTargetsFile(String targetsFile) { this.targetsFile = targetsFile; }
+    public void setEntryPointsFile(String entryPointsFile) { this.entryPointsFile = entryPointsFile; }
+    public void setOutputFile(String outputFile) { this.outputFile = outputFile; }
+    public void setExtractOnly(boolean extractOnly) { this.extractOnly = extractOnly; }
+    public void setAnalysisScope(String analysisScope) { this.analysisScope = analysisScope; }
+    public void setAndroidDir(String androidDir) { this.androidDir = androidDir; }
+    public void setRtJar(String rtJar) { this.rtJar = rtJar; }
+    public void setTimeout(int timeout) { this.timeout = timeout; }
+    public void setAppPackageOnly(boolean appPackageOnly) { this.appPackageOnly = appPackageOnly; }
+    public void setDebug(boolean debug) { this.debug = debug; }
+    public void setHelp(boolean help) { this.help = help; }
+
+    /**
+     * Get entry point types as enum set for compatibility.
+     */
+    public Set<ComponentType> getEntryPointTypesSet() {
+        return parseEntryPointTypes(entryPointTypes);
+    }
+
+    /**
+     * Get writer type as enum for compatibility.
+     */
+    public WriterType getWriterTypeEnum() {
+        return WriterType.fromString(writerType);
+    }
+
+    /**
+     * Get analysis scope as enum for compatibility.
+     */
+    public AnalysisScope getAnalysisScopeEnum() {
+        return AnalysisScope.fromString(analysisScope);
+    }
 }
+

@@ -58,8 +58,13 @@ public class JarExtractor implements ApplicationExtractor {
     @Override
     public void initialize(Object config) {
         this.config = config;
-        // TODO: Extract jarPath from config when CLI is implemented
-        // For now, this will be set by the calling code
+        if (config instanceof br.unb.cic.reach.common.model.ConfigMatrix) {
+            br.unb.cic.reach.common.model.ConfigMatrix matrix = (br.unb.cic.reach.common.model.ConfigMatrix) config;
+            this.jarPath = matrix.getInputPath();
+            log.debug("JarExtractor initialized with ConfigMatrix: jar={}", jarPath);
+        } else {
+            log.debug("JarExtractor initialized without proper ConfigMatrix configuration");
+        }
     }
     
     /**
@@ -205,13 +210,26 @@ public class JarExtractor implements ApplicationExtractor {
     private void initializeBasicSoot() {
         log.debug("Initializing basic Soot for JAR: {}", jarPath);
         
-        G.reset();
+//        G.reset();
         Options.v().set_process_dir(Collections.singletonList(jarPath));
-        Options.v().set_src_prec(Options.src_prec_class);
+//        Options.v().set_src_prec(Options.src_prec_class);
+        Options.v().set_src_prec(Options.src_prec_java);
         Options.v().set_allow_phantom_refs(true);
         Options.v().set_prepend_classpath(true);
-        
+
+        //		soot.G.reset();
+//		Options.v().set_full_resolver(true);
+//		Options.v().set_prepend_classpath(true);
+        Options.v().set_whole_program(true);
+        Options.v().set_validate(true);
+        Options.v().set_output_format(Options.output_format_none);
+
+        Options.v().setPhaseOption("cg", "all-reachable");
+        Options.v().setPhaseOption("cg.spark", "on");
+        Options.v().setPhaseOption("cg.spark", "verbose:false");
         Scene.v().loadNecessaryClasses();
+        System.out.println("Loaded necessary classes");
+//        PackManager.v().runPacks();
     }
     
     /**

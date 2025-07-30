@@ -1,25 +1,11 @@
 package br.unb.cic.reach.apk.reader;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-
+import br.unb.cic.reach.apk.model.*;
+import br.unb.cic.reach.apk.util.FileUtil;
+import brut.androlib.ApkDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xmlpull.v1.XmlPullParserException;
-
-import br.unb.cic.reach.apk.model.ActivityInfo;
-import br.unb.cic.reach.apk.model.AndroidAppInfo;
-import br.unb.cic.reach.apk.model.BroadcastReceiverInfo;
-import br.unb.cic.reach.apk.model.ContentProviderInfo;
-import br.unb.cic.reach.apk.model.IntentFilterInfo;
-import br.unb.cic.reach.apk.model.ServiceInfo;
-import br.unb.cic.reach.apk.util.FileUtil;
-import brut.androlib.ApkDecoder;
-import brut.androlib.exceptions.AndrolibException;
-import brut.directory.DirectoryException;
 import soot.jimple.infoflow.android.axml.AXmlAttribute;
 import soot.jimple.infoflow.android.axml.AXmlNode;
 import soot.jimple.infoflow.android.manifest.ProcessManifest;
@@ -28,6 +14,11 @@ import soot.jimple.infoflow.android.manifest.binary.BinaryManifestBroadcastRecei
 import soot.jimple.infoflow.android.manifest.binary.BinaryManifestContentProvider;
 import soot.jimple.infoflow.android.manifest.binary.BinaryManifestService;
 import soot.jimple.infoflow.android.resources.ARSCFileParser;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Android APK application information reader and processor.
@@ -116,7 +107,7 @@ public class AppReader {
 
         // Initialize resource parser
         ARSCFileParser resources = new ARSCFileParser();
-        resources.parse(targetAPK.getAbsolutePath());
+        resources.parse(new File(targetAPK.getAbsolutePath()));
 
         try (ProcessManifest processManifest = new ProcessManifest(targetAPK, resources)) {
             log.debug("Processing manifest for: {}", apkPath);
@@ -463,49 +454,54 @@ public class AppReader {
     }
 
     /**
-     * Decompiles APK file for source code analysis.
+     * Decodes APK file for source code analysis.
      * <p>
-     * Creates decompiled source code from APK file for advanced analysis
-     * scenarios that require access to application source code and resources.
+     * Creates decoded source code from APK file for advanced analysis
+     * scenarios that require access to application resources.
      * <p>
      * ### Implementation Notes:
-     * - Creates temporary directory for decompiled content
-     * - Uses ApkDecoder for reliable APK decompilation
+     * - Creates temporary directory for decoded content
+     * - Uses ApkDecoder for reliable APK decoding
      * - Provides comprehensive error handling and cleanup
-     * - Returns directory containing decompiled application resources
+     * - Returns directory containing decoded application resources
      *
      * @param appInfo Application information for context and naming
-     * @return File representing directory containing decompiled content
-     * @throws IOException if decompilation fails or file system errors occur
+     * @return File representing directory containing decoded content
+     * @throws IOException if decoding fails or file system errors occur
      */
-    public static File decompileApp(AndroidAppInfo appInfo) throws IOException {
+    public static File decodeApk(AndroidAppInfo appInfo) throws IOException {
         log.info("Decompiling app: {}", appInfo.getPath());
 
         String appLabel = appInfo.getLabel();
         File outDir = FileUtil.createTempDirectory(appLabel);
-        ApkDecoder decoder = new ApkDecoder(new File(appInfo.getPath()));
 
-        try {
+        try (brut.directory.ExtFile apkFile = new brut.directory.ExtFile(new File(appInfo.getPath()))) {
             // Clean any existing content
             FileUtil.delete(outDir);
 
-            // Perform decompilation
-            decoder.decode(outDir);
+            // Create Config with default settings
+            brut.androlib.Config config = new brut.androlib.Config();
 
-            log.info("Decompiled '{}' successfully to: {}", appLabel, outDir.getAbsolutePath());
+            // Create ApkDecoder with the new constructor signature
+            ApkDecoder decoder = new ApkDecoder(apkFile, config);
+
+            // Perform decompilation
+            decoder.decode(new File(outDir.getAbsolutePath()));
+
+            log.info("Decoded '{}' successfully to: {}", appLabel, outDir.getAbsolutePath());
             return outDir;
 
-        } catch (AndrolibException | DirectoryException e) {
-            log.error("Decompilation failed for '{}': {}", appLabel, e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Decoding failed for '{}': {}", appLabel, e.getMessage(), e);
 
             // Cleanup on failure
             try {
                 FileUtil.delete(outDir);
             } catch (IOException cleanupError) {
-                log.warn("Failed to cleanup after decompilation error: {}", cleanupError.getMessage());
+                log.warn("Failed to cleanup after decoding error: {}", cleanupError.getMessage());
             }
 
-            throw new IOException("Error decompiling APK: " + appInfo.getPath(), e);
+            throw new IOException("Error decoding APK: " + appInfo.getPath(), e);
         }
     }
 }
