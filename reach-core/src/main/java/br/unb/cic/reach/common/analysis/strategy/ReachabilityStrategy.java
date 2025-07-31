@@ -1,6 +1,6 @@
-// common/src/main/java/br/unb/cic/reach/common/analysis/ReachabilityStrategy.java
+// common/src/main/java/br/unb/cic/reach/common/analysis/ReachabilityStrategyType.java
 
-package br.unb.cic.reach.common.analysis;
+package br.unb.cic.reach.common.analysis.strategy;
 
 import java.util.Optional;
 import java.util.Set;

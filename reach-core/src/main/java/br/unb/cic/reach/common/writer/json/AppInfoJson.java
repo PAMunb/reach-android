@@ -6,10 +6,10 @@ import br.unb.cic.reach.common.model.AppInfo;
  * JSON representation of application information.
  */
 public class AppInfoJson {
-    private String path;
-    private String packageName;
-    private String appName;
-    private String type;
+    private final String path;
+    private final String packageName;
+    private final String appName;
+    private final String type;
     
     public AppInfoJson(AppInfo appInfo) {
         this.path = appInfo.getPath();

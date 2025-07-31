@@ -102,6 +102,22 @@ public class CommandLineArgs {
             description = "Show help information", help = true)
     private boolean help = false;
 
+    @Parameter(names = {"--reachability"},
+            description = "Reachability strategy: soot-bfs (default), jgrapht-dijkstra")
+    private ConfigMatrix.ReachabilityStrategyType reachabilityStrategyType = ConfigMatrix.ReachabilityStrategyType.SOOT_BFS;
+
+    @Parameter(names = {"--callgraph"},
+            description = "Reachability strategy: soot-bfs (default), jgrapht-dijkstra")
+    private ConfigMatrix.CallGraphAlgorithm callgraphAlgorithm = ConfigMatrix.CallGraphAlgorithm.SPARK;
+
+    @Parameter(names = {"--aliasing"},
+            description = "Aliasing algorithm: flow-sensitive (default), pts-based, lazy, none")
+    private ConfigMatrix.AliasingAlgorithm aliasingAlgorithm = ConfigMatrix.AliasingAlgorithm.FlowSensitive;
+
+    @Parameter(names = {"--max-callback-depth"},
+            description = "Maximum analysis callback depth (default: 10)")
+    private int maxAnalysisCallbackDepth = 10;
+
     /**
      * Initialize command line arguments with environment-based defaults.
      */
@@ -126,11 +142,19 @@ public class CommandLineArgs {
      * @throws ConfigurationException if parameter validation fails
      */
     public ConfigMatrix buildConfigMatrix() throws ConfigurationException {
+        System.out.println("******** Initializing configuration...");
+        System.out.println("reachabilityStrategyType: " + reachabilityStrategyType);
+        System.out.println("callgraphAlgorithm: " + callgraphAlgorithm);
+        System.out.println("aliasingAlgorithm: " + aliasingAlgorithm);
+        System.out.println("maxAnalysisCallbackDepth: " + maxAnalysisCallbackDepth);
         return new ConfigMatrix.Builder()
                 .withAnalysisScope(AnalysisScope.fromString(analysisScope))
                 .withAppPackageOnly(appPackageOnly)
                 .withEntryPointTypes(parseEntryPointTypes(entryPointTypes))
                 .withExtractOnly(extractOnly)
+                .withReachabilityStrategy(reachabilityStrategyType)
+                .withCallGraphAlgorithm(callgraphAlgorithm)
+                .withAliasingAlgorithm(aliasingAlgorithm)
                 .withWriterType(WriterType.fromString(writerType))
                 .withTimeout(timeout)
                 .withInputPath(inputPath)
@@ -139,6 +163,7 @@ public class CommandLineArgs {
                 .withOutputFile(outputFile)
                 .withAndroidPlatformsDir(androidDir)
                 .withRtJarPath(rtJar)
+                .withMaxAnalysisCallbackDepth(maxAnalysisCallbackDepth)
                 .build();
     }
 
@@ -176,10 +201,8 @@ public class CommandLineArgs {
         // Validate output directory
         File output = new File(outputFile);
         File outputDir = output.getParentFile();
-        if (outputDir != null && !outputDir.exists()) {
-            if (!outputDir.mkdirs()) {
-                throw new ParameterException("Cannot create output directory: " + outputDir);
-            }
+        if (outputDir != null && !outputDir.exists() && !outputDir.mkdirs()) {
+            throw new ParameterException("Cannot create output directory: " + outputDir);
         }
 
         // Validate writer type

@@ -1,4 +1,4 @@
-package br.unb.cic.reach.common.analysis;
+package br.unb.cic.reach.common.analysis.strategy;
 
 import java.util.ArrayList;
 import java.util.HashMap;

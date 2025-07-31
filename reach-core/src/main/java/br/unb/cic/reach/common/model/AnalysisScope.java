@@ -2,17 +2,17 @@ package br.unb.cic.reach.common.model;
 
 /**
  * Enumeration of analysis scope options for output filtering configuration.
- *
+ * <p>
  * This enum defines the available scopes for filtering analysis output based on
  * reachability status, enabling users to control what methods are included in
  * the final results across the 60-configuration matrix.
- *
+ * <p>
  * ### Architectural Decisions:
  * - Located in reach-core to avoid circular dependencies
  * - Type-safe enum for compile-time validation
  * - Clear value mapping for command line parameter processing
  * - Integration with configuration matrix as one of three dimensions
- *
+ * <p>
  * ### Role in the System:
  * - Core configuration type for output scope filtering
  * - Bridge between command line configuration and writer filtering
@@ -22,7 +22,7 @@ package br.unb.cic.reach.common.model;
 public enum AnalysisScope {
     /**
      * Include all methods from selected classes regardless of reachability status.
-     *
+     * <p>
      * This is the default scope that preserves backward compatibility and
      * provides complete method enumeration for comprehensive analysis.
      */
@@ -30,7 +30,7 @@ public enum AnalysisScope {
 
     /**
      * Include only methods that are reachable from entry points.
-     *
+     * <p>
      * This scope creates focused output by filtering methods based on
      * call graph reachability analysis, potentially reducing output size
      * dramatically in large applications.
@@ -58,19 +58,16 @@ public enum AnalysisScope {
      * @return Human-readable description of the analysis scope
      */
     public String getDescription() {
-        switch (this) {
-            case ALL_METHODS:
-                return "Include all methods from selected classes";
-            case REACHABLE_ONLY:
-                return "Include only methods reachable from entry points";
-            default:
-                return "Unknown scope";
-        }
+        return switch (this) {
+            case ALL_METHODS -> "Include all methods from selected classes";
+            case REACHABLE_ONLY -> "Include only methods reachable from entry points";
+            default -> "Unknown scope";
+        };
     }
 
     /**
      * Converts string parameter to enum with comprehensive validation.
-     *
+     * <p>
      * Provides robust parsing of command line parameters with clear error
      * messages for invalid values, supporting the configuration matrix
      * validation process.

@@ -24,18 +24,18 @@ import br.unb.cic.reach.common.model.ReachMethod;
 
 /**
  * Optimized JSON writer with ConfigMatrix integration and hierarchical filtering.
- * 
+ * <p>
  * This writer produces structured JSON output with configurable method filtering
  * while maintaining hierarchical organization by classes and components. It includes
  * comprehensive metadata, analysis configuration, and statistical information
  * for detailed result analysis and integration with external tools.
- * 
+ * <p>
  * ### JSON Structure:
  * - app_info: Application metadata and component statistics
  * - analysis_config: Complete configuration matrix information
  * - results: Hierarchical method data with scope-based filtering
  * - statistics: Comprehensive filtering and analysis metrics
- * 
+ * <p>
  * ### Filtering Optimization:
  * - Empty classes (after filtering) are excluded to keep output clean
  * - Method filtering applied during JSON construction for efficiency
@@ -71,7 +71,7 @@ public class JsonWriter implements Writer {
 
     /**
      * Build complete JSON structure with ConfigMatrix integration.
-     * 
+     * <p>
      * This method constructs the full JSON document including application metadata,
      * configuration information, filtered results, and comprehensive statistics.
      * The structure provides complete traceability of analysis parameters and results.
@@ -121,7 +121,7 @@ public class JsonWriter implements Writer {
 
     /**
      * Create analysis configuration JSON with complete ConfigMatrix details.
-     * 
+     * <p>
      * This section provides complete traceability of analysis parameters,
      * enabling reproducible results and parameter sensitivity analysis.
      */
@@ -149,11 +149,11 @@ public class JsonWriter implements Writer {
 
             // Algorithm and performance configuration
             configJson.addProperty("reachability_algorithm", 
-                configMatrix.getReachabilityAlgorithm().getValue());
-            configJson.addProperty("performance_priority", 
-                configMatrix.getPerformancePriority().getValue());
-            configJson.addProperty("call_graph_precision", 
-                configMatrix.getCallGraphPrecision().getValue());
+                configMatrix.getReachabilityStrategy().getValue());
+            configJson.addProperty("callgraph_algorithm",
+                configMatrix.getCallGraphAlgorithm().getValue());
+            configJson.addProperty("aliasing_algorithm",
+                configMatrix.getAliasingAlgorithm().getValue());
 
             // Output configuration
             configJson.addProperty("writer_type", configMatrix.getWriterType().getExtension());
@@ -170,7 +170,7 @@ public class JsonWriter implements Writer {
 
     /**
      * Create filtered results JSON with hierarchical structure.
-     * 
+     * <p>
      * This method applies analysis scope filtering while maintaining the
      * hierarchical class-method organization. Empty classes (after filtering)
      * are excluded to keep the output focused and clean.
@@ -193,7 +193,7 @@ public class JsonWriter implements Writer {
 
     /**
      * Create JSON representation of a class with filtered methods.
-     * 
+     * <p>
      * This method handles the core filtering logic while maintaining
      * complete class metadata and hierarchical structure.
      */
@@ -217,7 +217,7 @@ public class JsonWriter implements Writer {
 
     /**
      * Create complete JSON representation of a method.
-     * 
+     * <p>
      * This method includes all available reachability information,
      * path data, and analysis results for comprehensive method documentation.
      */
@@ -251,7 +251,7 @@ public class JsonWriter implements Writer {
 
     /**
      * Create comprehensive statistics JSON with filtering metrics.
-     * 
+     * <p>
      * This method computes detailed statistics about the filtering operation
      * and analysis results, providing insight into the effectiveness of
      * the analysis scope configuration.
@@ -311,20 +311,19 @@ public class JsonWriter implements Writer {
 
     /**
      * Core filtering predicate matching CsvWriter logic.
-     * 
+     * <p>
      * This method implements identical filtering logic to CsvWriter
      * to ensure consistent behavior across output formats.
      */
     private boolean shouldIncludeMethod(ReachMethod method, AnalysisScope scope) {
-        switch (scope) {
-            case ALL_METHODS:
-                return true;
-            case REACHABLE_ONLY:
-                return method.isReachable();
-            default:
+        return switch (scope) {
+            case ALL_METHODS -> true;
+            case REACHABLE_ONLY -> method.isReachable();
+            default -> {
                 log.warn("Unknown analysis scope: {}. Defaulting to ALL_METHODS", scope);
-                return true;
-        }
+                yield true;
+            }
+        };
     }
 
     /**

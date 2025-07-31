@@ -3,7 +3,9 @@ package br.unb.cic.reach.common.extractor;
 import java.util.Set;
 
 import br.unb.cic.reach.common.model.AppInfo;
+import br.unb.cic.reach.common.model.ConfigMatrix;
 import br.unb.cic.reach.common.model.EntryPoint;
+import soot.Body;
 import soot.SootMethod;
 import soot.jimple.toolkits.callgraph.CallGraph;
 
@@ -41,7 +43,7 @@ public interface ApplicationExtractor {
      *
      * @param config The command line configuration containing analysis parameters
      */
-    void initialize(Object config);
+    void initialize(ConfigMatrix config);
 
     /**
      * Extracts basic application information without target analysis.
@@ -124,4 +126,23 @@ public interface ApplicationExtractor {
      * @return Set of resolved SootMethod objects
      */
     Set<SootMethod> resolveTargetMethods(Set<String> signatures);
+
+    /**
+     * Safely retrieves method body handling Soot's lazy loading.
+     */
+    default Body getMethodBody(SootMethod method) {
+        if (method == null) {
+            return null;
+        }
+
+        try {
+            if (method.hasActiveBody()) {
+                return method.getActiveBody();
+            } else {
+                return method.retrieveActiveBody();
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

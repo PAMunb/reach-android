@@ -10,14 +10,14 @@ import br.unb.cic.reach.common.model.ReachMethod;
  * JSON representation of a method with reachability information.
  */
 public class ReachMethodJson {
-    private String methodName;
-    private String methodSignature;
-    private boolean isEntryPoint;
-    private boolean reachable;
-    private boolean reachesTarget;
-    private boolean directlyReachesTarget;
-    private Set<String> reachableTargets;
-    private List<List<String>> pathsToTargets;
+    private final String methodName;
+    private final String methodSignature;
+    private final boolean isEntryPoint;
+    private final boolean reachable;
+    private final boolean reachesTarget;
+    private final boolean directlyReachesTarget;
+    private final Set<String> reachableTargets;
+    private final List<List<String>> pathsToTargets;
     
     public ReachMethodJson(ReachMethod method) {
         this.methodName = method.getMethodName();

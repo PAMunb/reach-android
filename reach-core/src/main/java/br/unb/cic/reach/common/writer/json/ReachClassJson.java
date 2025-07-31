@@ -9,10 +9,10 @@ import br.unb.cic.reach.common.model.ReachClass;
  * JSON representation of a class with reachability information.
  */
 public class ReachClassJson {
-    private String className;
-    private String componentType;
-    private boolean isMainComponent;
-    private List<ReachMethodJson> methods;
+    private final String className;
+    private final String componentType;
+    private final boolean isMainComponent;
+    private final List<ReachMethodJson> methods;
     
     public ReachClassJson(ReachClass reachClass) {
         this.className = reachClass.getClassName();

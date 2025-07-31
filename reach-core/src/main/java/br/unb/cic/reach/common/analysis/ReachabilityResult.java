@@ -208,7 +208,7 @@ public class ReachabilityResult {
         if (configMatrix != null) {
             summary.append("Configuration: ").append(configMatrix.getMatrixPosition()).append("\n");
             summary.append("Analysis Scope: ").append(configMatrix.getAnalysisScope().getValue()).append("\n");
-            summary.append("Algorithm: ").append(configMatrix.getReachabilityAlgorithm().getValue()).append("\n");
+            summary.append("Algorithm: ").append(configMatrix.getReachabilityStrategy().getValue()).append("\n");
         }
         
         summary.append("Execution Time: ").append(executionTime).append("ms\n");

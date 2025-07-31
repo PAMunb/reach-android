@@ -14,9 +14,9 @@ import br.unb.cic.reach.common.model.AppInfo;
  * suitable for comprehensive result reporting and programmatic access.
  */
 public class JsonOutput {
-    private AppInfoJson appInfo;
-    private List<ReachClassJson> results;
-    private AnalysisMetricsJson metrics;
+    private final AppInfoJson appInfo;
+    private final List<ReachClassJson> results;
+    private final AnalysisMetricsJson metrics;
     
     public JsonOutput(ReachabilityResult result) {
         this.appInfo = new AppInfoJson(result.getAppInfo());

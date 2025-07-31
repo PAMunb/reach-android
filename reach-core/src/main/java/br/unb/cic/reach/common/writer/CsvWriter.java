@@ -18,17 +18,17 @@ import br.unb.cic.reach.common.model.ReachMethod;
 
 /**
  * Optimized CSV writer with ConfigMatrix integration and analysis scope filtering.
- * 
+ * <p>
  * This writer implements efficient CSV generation with configurable method filtering
  * based on the analysis scope configuration. It provides detailed statistics about
  * filtering operations and maintains backward compatibility with existing CSV formats.
- * 
+ * <p>
  * ### Filtering Implementation:
  * The writer applies analysis scope filtering during output generation, which means:
  * - ALL_METHODS: All discovered methods are written to CSV
  * - REACHABLE_ONLY: Only methods marked as reachable from entry points are written
  * - Empty classes (after filtering) are still included to maintain structure
- * 
+ * <p>
  * ### Performance Optimization:
  * - Single-pass filtering during write operation
  * - Efficient character encoding handling
@@ -64,7 +64,7 @@ public class CsvWriter implements Writer {
 
     /**
      * Write all methods from a class that match the analysis scope filter.
-     * 
+     * <p>
      * This method applies the core filtering logic that implements the analysis
      * scope functionality. The filtering happens during write operation to
      * minimize memory usage and provide immediate feedback about filtering effects.
@@ -97,30 +97,30 @@ public class CsvWriter implements Writer {
 
     /**
      * Core filtering predicate implementing analysis scope logic.
-     * 
+     * <p>
      * This method implements the fundamental filtering decision that determines
      * which methods appear in the final output based on the user's analysis scope choice.
      * The logic is intentionally simple and direct for maximum performance and clarity.
-     * 
+     * <p>
      * ### Filtering Rules:
      * - ALL_METHODS: Include all discovered methods regardless of reachability
      * - REACHABLE_ONLY: Include only methods that are reachable from entry points
-     * 
+     * <p>
      * ### Performance Note:
      * This method is called for every method in the analysis, so it must be highly
      * optimized. The switch statement provides optimal branch prediction performance.
      */
     private boolean shouldIncludeMethod(ReachMethod method, AnalysisScope scope) {
-        switch (scope) {
-            case ALL_METHODS:
-                return true;
-            case REACHABLE_ONLY:
+        return switch (scope) {
+            case ALL_METHODS -> true;
+            case REACHABLE_ONLY ->
                 // This is the key filtering condition - only reachable methods pass
-                return method.isReachable();
-            default:
+                    method.isReachable();
+            default -> {
                 log.warn("Unknown analysis scope: {}. Defaulting to ALL_METHODS", scope);
-                return true;
-        }
+                yield true;
+            }
+        };
     }
 
     /**
@@ -134,7 +134,7 @@ public class CsvWriter implements Writer {
 
     /**
      * Write individual method row with proper CSV escaping.
-     * 
+     * <p>
      * This method handles the complexity of CSV formatting including proper
      * escaping of special characters, null value handling, and consistent
      * field ordering that maintains compatibility with existing analysis tools.
@@ -172,7 +172,7 @@ public class CsvWriter implements Writer {
 
     /**
      * Log comprehensive statistics about the CSV writing operation.
-     * 
+     * <p>
      * This method provides detailed feedback about the filtering operation,
      * helping users understand the impact of their analysis scope choice.
      * The statistics are particularly valuable for REACHABLE_ONLY scope
@@ -225,7 +225,7 @@ public class CsvWriter implements Writer {
 
     /**
      * Statistics container for comprehensive filtering operation tracking.
-     * 
+     * <p>
      * This class captures detailed metrics about the filtering operation,
      * enabling comprehensive reporting and performance analysis of the
      * analysis scope functionality.
