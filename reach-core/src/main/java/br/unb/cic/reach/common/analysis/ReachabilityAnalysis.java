@@ -797,6 +797,13 @@ public class ReachabilityAnalysis {
                     ReachabilityInfo info = reachabilityMap.get(sootMethod);
                     boolean isEntryPoint = entryPointMap.containsKey(sootMethod);
                     
+                    // Debug unreachableHash specifically
+                    if (sootMethod.getName().equals("unreachableHash")) {
+                        System.out.println("DEBUG_UNREACHABLE: updateAppInfoWithResults - unreachableHash found");
+                        System.out.println("DEBUG_UNREACHABLE:   Before update - reachesTarget=" + reachMethod.isReachesTarget() + ", targets=" + reachMethod.getReachableTargets().size());
+                        System.out.println("DEBUG_UNREACHABLE:   Call graph info=" + (info != null ? "found" : "not found"));
+                    }
+                    
                     if (info != null) {
                         // Method found via call graph - use call graph results
                         populateReachMethod(reachMethod, info, isEntryPoint);
@@ -806,6 +813,13 @@ public class ReachabilityAnalysis {
                         reachMethod.setEntryPoint(isEntryPoint);
                         reachMethod.setReachable(false); // Not reachable via call graph
                         // Preserve existing reachesTarget and targets from direct/indirect analysis
+                        // Note: reachesTarget and reachableTargets are already set by AndroidExtractor
+                        // and we don't want to overwrite them here
+                    }
+                    
+                    // Debug unreachableHash specifically
+                    if (sootMethod.getName().equals("unreachableHash")) {
+                        System.out.println("DEBUG_UNREACHABLE:   After update - reachesTarget=" + reachMethod.isReachesTarget() + ", targets=" + reachMethod.getReachableTargets().size());
                     }
                 }
             }
