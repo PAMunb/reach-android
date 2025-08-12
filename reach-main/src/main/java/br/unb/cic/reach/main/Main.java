@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Optimized main application with ConfigMatrix integration and O(N+E) algorithm.
@@ -58,10 +59,15 @@ public class Main {
 
     private static void runLocal() {
         String apkPath = "/home/pedro/desenvolvimento/workspaces/workspaces-doutorado/workspace-rv/reach-android/examples/cryptoapp.apk";
+        String targetsFile = "/home/pedro/desenvolvimento/workspaces/workspaces-doutorado/workspace-rv/reach-android/examples/mopMethods.txt";
+//        String apkPath = "/home/pedro/desenvolvimento/RV_ANDROID/static_analysis/LUIS/apks/br.biblia.apk";
+//        String targetsFile = "/home/pedro/Downloads/reachdroid/reachdroid/br.biblia.apk-report.txt";
+
+
         String androidPlatformsDir = "/home/pedro/desenvolvimento/aplicativos/android/sdk/platforms";
         String rtJarPath = "/home/pedro/.sdkman/candidates/java/8.0.302-open/jre/lib/rt.jar";
         int timeoutSeconds = 300;
-        String targetsFile = "/home/pedro/desenvolvimento/workspaces/workspaces-doutorado/workspace-rv/reach-android/examples/mopMethods.txt";
+//        String targetsFile = "/home/pedro/desenvolvimento/workspaces/workspaces-doutorado/workspace-rv/reach-android/examples/mopMethods.txt";
         String outputFile = "/home/pedro/desenvolvimento/workspaces/workspaces-doutorado/workspace-rv/reach-android/examples/result_run_local.csv";
 
         try {
@@ -74,8 +80,8 @@ public class Main {
                     .withOutputFile(outputFile)
                     .withAppPackageOnly(true)
                     .withExtractOnly(false)
-                    .withAnalysisScope(AnalysisScope.ALL_METHODS)
-                    .withReachabilityStrategy(ConfigMatrix.ReachabilityStrategyType.SOOT_BFS)
+                    .withAnalysisScope(AnalysisScope.REACHABLE_ONLY)
+                    .withReachabilityStrategy(ConfigMatrix.ReachabilityStrategyType.JGRAPHT_DIJKSTRA)
                     .withCallGraphAlgorithm(ConfigMatrix.CallGraphAlgorithm.SPARK)
                     .withAliasingAlgorithm(ConfigMatrix.AliasingAlgorithm.FlowSensitive)
                     .build();
@@ -90,7 +96,6 @@ public class Main {
                     System.out.println("\t" + reachMethod);
                 }
             }
-
 
             writeResults(result, config);
 
@@ -235,9 +240,14 @@ public class Main {
         log.info("Resolved {} target methods from {} signatures",
                 targetMethods.size(), targetSignatures.size());
         System.out.println("DEBUG_REACH: Target methods resolved: " + targetMethods.size()); // DEBUG_REACH
-        for (SootMethod target : targetMethods) {
-            System.out.println("DEBUG_REACH:   - " + target.getSignature()); // DEBUG_REACH
-        }
+//        for (SootMethod target : targetMethods) {
+//            System.out.println("DEBUG_REACH:   - " + target.getSignature()); // DEBUG_REACH
+//        }
+//        Set<SootMethod> intersecao = entryPoints.stream().map(EntryPoint::getSootMethod).collect(Collectors.toSet());
+//        intersecao.retainAll(targetMethods);
+//        System.out.println("****************** DEBUG_REACH: intersect: " + intersecao.isEmpty());
+//        intersecao.forEach(m -> System.out.println("DEBUG_REACH:   - " + m.getSignature()));
+//        System.exit(-1);
 
         // Phase 4: Execute optimized reachability analysis
         log.info("Executing O(N+E) optimized reachability analysis...");

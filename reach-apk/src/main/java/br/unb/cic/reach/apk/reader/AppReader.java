@@ -107,8 +107,8 @@ public class AppReader {
 
         // Initialize resource parser
         ARSCFileParser resources = new ARSCFileParser();
-//        resources.parse(new File(targetAPK.getAbsolutePath()));
-        resources.parse(targetAPK.getAbsolutePath());
+        resources.parse(new File(targetAPK.getAbsolutePath()));
+//        resources.parse(targetAPK.getAbsolutePath());
 
         try (ProcessManifest processManifest = new ProcessManifest(targetAPK, resources)) {
             log.debug("Processing manifest for: {}", apkPath);

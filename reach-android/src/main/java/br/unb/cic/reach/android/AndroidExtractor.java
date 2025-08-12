@@ -77,6 +77,7 @@ public class AndroidExtractor implements ApplicationExtractor {
         try {
             // Extract Android-specific information
             AndroidAppInfo androidAppInfo = AppReader.readApk(apkPath);
+            System.out.println("********** DEBUG_REACH: AndroidAppInfo loaded, total components: " + androidAppInfo.getAllComponents().size());
 
             // Resolve target methods
             Set<SootMethod> targetMethods = null;

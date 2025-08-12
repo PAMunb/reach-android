@@ -107,7 +107,7 @@ public class CommandLineArgs {
     private ConfigMatrix.ReachabilityStrategyType reachabilityStrategyType = ConfigMatrix.ReachabilityStrategyType.SOOT_BFS;
 
     @Parameter(names = {"--callgraph"},
-            description = "Reachability strategy: soot-bfs (default), jgrapht-dijkstra")
+            description = "")
     private ConfigMatrix.CallGraphAlgorithm callgraphAlgorithm = ConfigMatrix.CallGraphAlgorithm.SPARK;
 
     @Parameter(names = {"--aliasing"},

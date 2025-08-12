@@ -130,12 +130,14 @@ public class SootConfig {
         InfoflowAndroidConfiguration config = new InfoflowAndroidConfiguration();
 
         // Basic file configuration
-        config.getAnalysisFileConfig().setTargetAPKFile(matrix.getInputPath());
-        config.getAnalysisFileConfig().setAndroidPlatformDir(matrix.getAndroidPlatformsDir());
+//        config.getAnalysisFileConfig().setTargetAPKFile(matrix.getInputPath());
+//        config.getAnalysisFileConfig().setAndroidPlatformDir(matrix.getAndroidPlatformsDir());
+        config.getAnalysisFileConfig().setTargetAPKFile(new File(matrix.getInputPath()));
+        config.getAnalysisFileConfig().setAndroidPlatformDir(new File(matrix.getAndroidPlatformsDir()));
 
         // Callback analysis configuration
         config.getCallbackConfig().setEnableCallbacks(true);
-        config.getCallbackConfig().setCallbackAnalyzer(CallbackAnalyzer.Default);
+        config.getCallbackConfig().setCallbackAnalyzer(CallbackAnalyzer.Fast);
         config.getCallbackConfig().setCallbackAnalysisTimeout(matrix.getTimeoutSeconds());
         config.getCallbackConfig().setMaxAnalysisCallbackDepth(matrix.getMaxAnalysisCallbackDepth());
 
@@ -152,9 +154,11 @@ public class SootConfig {
         config.setEnableExceptionTracking(true);
         config.setEnableOriginalNames(true);
         config.setEnableLineNumbers(true);
+//        config.setMemoryThreshold();
 
         // Performance configuration
-        config.setTaintAnalysisEnabled(false); // Disabled for reachability-only analysis
+        config.setTaintAnalysisEnabled(false);
+//        config.setImplicitFlowMode(InfoflowConfiguration.ImplicitFlowMode.NoImplicitFlows);
         config.setDataFlowTimeout(matrix.getTimeoutSeconds());
         config.setMaxThreadNum(Math.min(32, Runtime.getRuntime().availableProcessors() * 2));
         config.setSootIntegrationMode(InfoflowConfiguration.SootIntegrationMode.UseExistingInstance);
@@ -207,8 +211,8 @@ public class SootConfig {
             case SPARK:
                 Options.v().setPhaseOption(spark, "on");
                 Options.v().setPhaseOption(spark, "verbose:false");
-                Options.v().setPhaseOption(spark, "on-fly-cg:true");
-                Options.v().setPhaseOption(spark, "field-based:false");
+//                Options.v().setPhaseOption(spark, "on-fly-cg:true");
+//                Options.v().setPhaseOption(spark, "field-based:false");
                 break;
 
             case GEOM:
